@@ -1,5 +1,5 @@
 export const CONFIG = Object.freeze({
-  BACKEND_URL: 'https://your-railway-app.up.railway.app'
+  BACKEND_URL: 'https://tdmdevback-production.up.railway.app'
 });
 
 export function backendUrl(path = '') {
