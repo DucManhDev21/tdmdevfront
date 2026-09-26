@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/css/style.css">
+  <title>Admin — QuickTools</title>
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <main class="admin-shell">
+    <section id="adminLoginView" class="glass admin-auth-card">
+      <a class="brand admin-brand" href="/"><img src="/logo.png" alt="Logo" class="brand-logo"><span class="brand-text"><strong>QuickTools Admin</strong><small>Quản lý menu</small></span></a>
+      <h1>Đăng nhập Admin</h1>
+      <p>Phiên đăng nhập dùng cookie HttpOnly trên server.</p>
+      <label for="adminPassword">Mật khẩu</label>
+      <div class="password-row"><input id="adminPassword" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu"><button id="toggleAdminPassword" class="icon-button" type="button">◉</button></div>
+      <button id="adminLoginButton" class="button primary wide" type="button">Đăng nhập</button>
+      <a class="text-button back-link" href="/">← Về trang chính</a>
+    </section>
+
+    <section id="adminPanelView" class="hidden">
+      <header class="admin-header glass">
+        <div><span class="eyebrow">ADMIN PANEL</span><h1>Quản lý menu động</h1><p>Thêm, sửa, xóa menu. Các trang đang mở nhận thay đổi qua SSE.</p></div>
+        <div class="button-row"><span id="firebaseStatus" class="status-pill">Đang kiểm tra…</span><button id="adminLogout" class="button danger" type="button">Đăng xuất</button></div>
+      </header>
+
+      <div class="admin-grid">
+        <section class="glass card">
+          <div class="card-title-row"><h3 id="formTitle">Thêm menu</h3><button id="cancelEdit" class="text-button hidden" type="button">Hủy sửa</button></div>
+          <label for="menuName">Tên menu</label><input id="menuName" type="text" maxlength="80" placeholder="Ví dụ: Công cụ AI">
+          <label for="menuType">Loại</label><select id="menuType"><option value="external">External — mở tab mới</option><option value="iframe">Iframe — mở modal</option></select>
+          <label for="menuUrl">URL</label><input id="menuUrl" type="url" placeholder="https://example.com">
+          <label for="menuOrder">Thứ tự</label><input id="menuOrder" type="number" step="1" value="10">
+          <button id="saveMenu" class="button primary wide" type="button">Lưu menu</button>
+        </section>
+
+        <section class="glass card">
+          <div class="card-title-row"><h3>Danh sách menu</h3><button id="reloadMenus" class="icon-button" type="button">↻</button></div>
+          <div id="menuTable" class="menu-table"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

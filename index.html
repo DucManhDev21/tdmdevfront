@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Công cụ Temp Mail và rút gọn Link4M hiện đại, nhanh và dễ sử dụng.">
+  <meta name="theme-color" content="#0b1020">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <title>QuickTools — Temp Mail & Link4M</title>
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="topbar glass">
+    <a class="brand" href="#home" data-route="home" aria-label="Trang chủ">
+      <img src="/logo.png" alt="Logo" class="brand-logo">
+      <span class="brand-text"><strong>QuickTools</strong><small>Temp Mail · Link4M</small></span>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Điều hướng chính">
+      <a href="#home" data-route="home">Trang chủ</a>
+      <a href="#tempmail" data-route="tempmail">Temp Mail</a>
+      <a href="#link4m" data-route="link4m">Rút gọn Link</a>
+      <span id="desktopDynamicMenu" class="dynamic-nav-group"></span>
+      <a href="/admin" class="nav-admin">Đăng nhập Admin</a>
+    </nav>
+
+    <div class="topbar-actions">
+      <button id="themeToggle" class="icon-button" type="button" aria-label="Đổi giao diện">☀️</button>
+      <button id="menuButton" class="hamburger" type="button" aria-label="Mở menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <strong>Menu</strong>
+      <button id="drawerClose" class="icon-button" type="button" aria-label="Đóng menu">✕</button>
+    </div>
+    <div class="drawer-nav">
+      <a href="#home" data-route="home">⌂ <span>Trang chủ</span></a>
+      <a href="#tempmail" data-route="tempmail">✉ <span>Temp Mail</span></a>
+      <a href="#link4m" data-route="link4m">↗ <span>Rút gọn Link</span></a>
+      <div id="drawerDynamicMenu"></div>
+      <a href="/admin" class="nav-admin">⚙ <span>Đăng nhập Admin</span></a>
+    </div>
+  </aside>
+  <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+
+  <main id="app" class="page-shell">
+    <section id="view-home" class="view active-view" data-view="home">
+      <div class="hero glass">
+        <div class="hero-copy">
+          <span class="eyebrow">QUICKTOOLS</span>
+          <h1>Công cụ tiện ích, <span>gọn và đẹp.</span></h1>
+          <p>Temp Mail dùng API v2 và trình rút gọn Link4M trong một giao diện nhẹ, responsive và thân thiện trên điện thoại.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#tempmail">Mở Temp Mail</a>
+            <a class="button secondary" href="#link4m">Rút gọn Link</a>
+          </div>
+        </div>
+        <div class="hero-orb" aria-hidden="true"><div class="orb-core">QT</div></div>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature-card glass"><div class="feature-icon">✉</div><h3>Temp Mail v2</h3><p>Tạo hộp thư, xem inbox, đọc nội dung và xóa email theo API.</p></article>
+        <article class="feature-card glass"><div class="feature-icon">↗</div><h3>Link4M</h3><p>Nhập API key, URL đích và nhận link rút gọn kèm QR code.</p></article>
+        <article class="feature-card glass"><div class="feature-icon">☰</div><h3>Menu động</h3><p>Admin quản lý menu bằng Firestore và cập nhật trực tiếp cho người đang truy cập.</p></article>
+      </div>
+    </section>
+
+    <section id="view-tempmail" class="view" data-view="tempmail">
+      <div class="section-heading">
+        <span class="eyebrow">TEMP MAIL</span>
+        <h2>Hộp thư tạm thời</h2>
+        <p>Email được tạo qua TempMail API v2. Tự động kiểm tra inbox theo chu kỳ.</p>
+      </div>
+
+      <div class="tool-layout">
+        <div class="glass card">
+          <div class="card-title-row"><h3>Địa chỉ hiện tại</h3><span id="tempStatus" class="status-pill">Sẵn sàng</span></div>
+          <div class="email-box"><code id="currentEmail">Đang tạo…</code><button id="copyEmail" class="icon-button" type="button" title="Sao chép">⧉</button></div>
+          <div class="button-row">
+            <button id="newEmail" class="button primary" type="button">+ Email mới</button>
+            <button id="deleteEmail" class="button danger" type="button">Xóa email</button>
+          </div>
+          <div class="custom-mail-box">
+            <label for="usernameInput">Tên tùy chọn</label>
+            <div class="inline-fields"><input id="usernameInput" type="text" maxlength="40" placeholder="ten_cua_ban"><select id="domainSelect"><option value="">Tự chọn domain</option></select><button id="createCustomEmail" class="button secondary" type="button">Tạo</button></div>
+            <small>Để trống tên/domain để hệ thống tự tạo ngẫu nhiên.</small>
+          </div>
+        </div>
+
+        <div class="glass card">
+          <div class="card-title-row"><h3>Inbox</h3><span id="refreshCountdown" class="muted">—</span></div>
+          <div id="inboxList" class="inbox-list"><div class="empty-state">Đang tải inbox…</div></div>
+        </div>
+      </div>
+
+      <div class="glass card message-panel hidden" id="messagePanel">
+        <div class="card-title-row"><div><span class="eyebrow">MESSAGE</span><h3 id="messageSubject">—</h3></div><button id="closeMessage" class="icon-button" type="button" aria-label="Đóng">✕</button></div>
+        <div class="message-meta"><span id="messageFrom">—</span><span id="messageDate">—</span></div>
+        <div class="message-tabs"><button class="tab active" data-message-tab="html">HTML</button><button class="tab" data-message-tab="text">TEXT</button></div>
+        <iframe id="messageHtml" class="message-iframe" sandbox="allow-same-origin"></iframe>
+        <pre id="messageText" class="message-text hidden"></pre>
+        <div id="attachmentsBox" class="attachments-box hidden"></div>
+      </div>
+    </section>
+
+    <section id="view-link4m" class="view" data-view="link4m">
+      <div class="section-heading"><span class="eyebrow">LINK4M</span><h2>Rút gọn đường dẫn</h2><p>API key được lưu tại trình duyệt để lần sau tự điền lại.</p></div>
+
+      <div class="tool-layout">
+        <div class="glass card">
+          <div class="card-title-row"><h3>Thông tin rút gọn</h3><span id="linkStatus" class="status-pill">Sẵn sàng</span></div>
+          <label for="linkApiKey">API Key Link4M</label>
+          <div class="password-row"><input id="linkApiKey" type="password" autocomplete="off" placeholder="Nhập API key"><button id="toggleApiKey" class="icon-button" type="button">◉</button></div>
+          <div class="api-key-actions"><button id="changeApiKey" class="text-button" type="button">Đổi API key</button><span id="apiSavedHint" class="muted">Chưa lưu</span></div>
+          <label for="linkTitle">Title / Alias <span class="optional">(tùy chọn)</span></label>
+          <input id="linkTitle" type="text" maxlength="120" placeholder="Ví dụ: Link tài liệu">
+          <label for="destinationUrl">Destination URL</label>
+          <input id="destinationUrl" type="url" placeholder="https://example.com/...">
+          <button id="shortenButton" class="button primary wide" type="button">Rút gọn ngay</button>
+        </div>
+
+        <div class="glass card result-card">
+          <div class="card-title-row"><h3>Kết quả</h3><span class="muted">Link4M</span></div>
+          <div id="shortLinkEmpty" class="empty-state">Chưa có link rút gọn.</div>
+          <div id="shortLinkResult" class="hidden">
+            <label>Short link</label>
+            <div class="email-box"><code id="shortLinkText">—</code><button id="copyShortLink" class="icon-button" type="button">⧉</button></div>
+            <div id="qrcode" class="qr-box"></div>
+            <a id="openShortLink" class="button secondary wide" target="_blank" rel="noopener noreferrer">Mở link</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="iframeModal" class="modal" hidden>
+    <div class="modal-panel glass">
+      <div class="modal-head"><strong id="iframeTitle">Trang</strong><button id="iframeClose" class="icon-button" type="button">✕</button></div>
+      <iframe id="dynamicIframe" class="dynamic-iframe" title="Nội dung menu"></iframe>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="/js/tempmail.js"></script>
+  <script src="/js/link4m.js"></script>
+</body>
+</html>
