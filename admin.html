@@ -1,50 +1,29 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10172b">
   <meta name="robots" content="noindex,nofollow">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/css/style.css">
-  <title>Admin — QuickTools</title>
+  <title>TDM Dev — Admin</title>
+  <link rel="icon" href="./favicon.ico">
+  <link rel="stylesheet" href="./css/style.css">
 </head>
-<body>
-  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+<body class="admin-page">
+  <div class="background-orb orb-a"></div><div class="background-orb orb-b"></div><div class="background-grid"></div>
+  <header class="topbar glass-panel"><a href="./index.html" class="brand"><img src="./logo.png" alt="TDM Dev" class="brand-logo"><div><strong>TDM Dev</strong><span>Admin Console</span></div></a><div class="topbar-actions"><a class="button button-ghost" href="./index.html">← Trang chủ</a><button id="adminLogout" class="button button-danger" hidden>Đăng xuất</button></div></header>
   <main class="admin-shell">
-    <section id="adminLoginView" class="glass admin-auth-card">
-      <a class="brand admin-brand" href="/"><img src="/logo.png" alt="Logo" class="brand-logo"><span class="brand-text"><strong>QuickTools Admin</strong><small>Quản lý menu</small></span></a>
-      <h1>Đăng nhập Admin</h1>
-      <p>Phiên đăng nhập dùng cookie HttpOnly trên server.</p>
-      <label for="adminPassword">Mật khẩu</label>
-      <div class="password-row"><input id="adminPassword" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu"><button id="toggleAdminPassword" class="icon-button" type="button">◉</button></div>
-      <button id="adminLoginButton" class="button primary wide" type="button">Đăng nhập</button>
-      <a class="text-button back-link" href="/">← Về trang chính</a>
-    </section>
+    <section id="adminLoginCard" class="admin-login glass-panel"><span class="eyebrow">ADMIN AUTHENTICATION</span><h1>Đăng nhập quản trị</h1><p>Phiên admin ngắn hạn được ký bởi backend. Mật khẩu không được lưu trong frontend.</p><form id="adminLoginForm"><div class="input-wrap"><label for="adminPassword">Mật khẩu Admin</label><input id="adminPassword" type="password" required autocomplete="current-password" placeholder="Nhập mật khẩu"></div><button id="adminLoginButton" class="button button-wide">Đăng nhập Admin</button></form></section>
 
-    <section id="adminPanelView" class="hidden">
-      <header class="admin-header glass">
-        <div><span class="eyebrow">ADMIN PANEL</span><h1>Quản lý menu động</h1><p>Thêm, sửa, xóa menu. Các trang đang mở nhận thay đổi qua SSE.</p></div>
-        <div class="button-row"><span id="firebaseStatus" class="status-pill">Đang kiểm tra…</span><button id="adminLogout" class="button danger" type="button">Đăng xuất</button></div>
-      </header>
-
+    <section id="adminPanel" hidden>
+      <div class="admin-heading"><div><span class="eyebrow">FIRESTORE • REAL-TIME</span><h1>Quản lý Hamburger Menu</h1><p>Thêm, sửa, xóa và thay đổi thứ tự các liên kết của TDM Dev.</p></div></div>
       <div class="admin-grid">
-        <section class="glass card">
-          <div class="card-title-row"><h3 id="formTitle">Thêm menu</h3><button id="cancelEdit" class="text-button hidden" type="button">Hủy sửa</button></div>
-          <label for="menuName">Tên menu</label><input id="menuName" type="text" maxlength="80" placeholder="Ví dụ: Công cụ AI">
-          <label for="menuType">Loại</label><select id="menuType"><option value="external">External — mở tab mới</option><option value="iframe">Iframe — mở modal</option></select>
-          <label for="menuUrl">URL</label><input id="menuUrl" type="url" placeholder="https://example.com">
-          <label for="menuOrder">Thứ tự</label><input id="menuOrder" type="number" step="1" value="10">
-          <button id="saveMenu" class="button primary wide" type="button">Lưu menu</button>
-        </section>
-
-        <section class="glass card">
-          <div class="card-title-row"><h3>Danh sách menu</h3><button id="reloadMenus" class="icon-button" type="button">↻</button></div>
-          <div id="menuTable" class="menu-table"></div>
-        </section>
+        <article class="glass-panel admin-card"><div class="card-title-row"><div><h3 id="formTitle">Thêm mục menu</h3><p>Menu được lưu trong collection <code>menus</code>.</p></div></div><form id="menuForm"><div class="input-wrap"><label for="menuTitle">Tên mục</label><input id="menuTitle" required maxlength="120" placeholder="Web AI"></div><div class="input-wrap"><label for="menuType">Loại liên kết</label><select id="menuType"><option value="external">Mở Tab mới (External)</option><option value="iframe">iFrame Modal</option></select></div><div class="input-wrap"><label for="menuUrl">Đường dẫn URL</label><input id="menuUrl" type="url" required placeholder="https://example.com"></div><div class="two-col"><div class="input-wrap"><label for="menuOrder">Order</label><input id="menuOrder" type="number" min="0" step="1" value="0"></div><label class="switch-row"><input id="menuEnabled" type="checkbox" checked><span>Hiển thị</span></label></div><div class="form-actions"><button class="button" type="submit">Lưu mục menu</button><button id="cancelEdit" class="button button-ghost" type="button" hidden>Hủy sửa</button></div></form></article>
+        <article class="glass-panel admin-card"><div class="card-title-row"><div><h3>Danh sách menu</h3><p>Cập nhật real-time từ Firestore.</p></div><span class="live-pill"><i></i> Live</span></div><div class="table-wrap"><table><thead><tr><th>Order</th><th>Tên</th><th>Loại</th><th>URL</th><th>Trạng thái</th><th></th></tr></thead><tbody id="menuTableBody"></tbody></table></div><div id="adminMenuEmpty" class="empty-state" hidden><div class="empty-icon">≡</div><h3>Chưa có menu</h3><p>Hãy thêm mục đầu tiên.</p></div></article>
       </div>
     </section>
   </main>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/js/admin.js"></script>
+  <div id="adminToast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./js/admin.js"></script>
 </body>
 </html>
