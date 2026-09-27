@@ -1,114 +1,136 @@
 <!doctype html>
-<html lang="vi" data-theme="light">
+<html lang="vi" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#10172b">
-  <meta name="description" content="TDM Dev — Email tạm thời và rút gọn link Link4M trong một giao diện hiện đại, nhanh gọn.">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="TDM Dev — Email tạm thời Temp Mail và rút gọn link với Link4M.">
   <meta name="robots" content="index,follow">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+  <link rel="apple-touch-icon" href="./logo.png">
   <title>TDM Dev — Temp Mail & Link4M</title>
-  <link rel="icon" href="./favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/style.css">
+  <style>
+    :root{
+      --bg:#090b10;--bg2:#10131a;--card:rgba(20,24,33,.72);--card2:rgba(255,255,255,.055);--text:#f7f8fb;--muted:#9aa3b2;--line:rgba(255,255,255,.10);--accent:#7c5cff;--accent2:#26d6ff;--good:#42dc9f;--warn:#f5bf54;--bad:#ff667e;--shadow:0 24px 80px rgba(0,0,0,.34);--radius:24px;--blur:18px
+    }
+    html[data-theme="light"]{--bg:#f5f7fb;--bg2:#e8edf5;--card:rgba(255,255,255,.76);--card2:rgba(10,18,30,.045);--text:#161b25;--muted:#677386;--line:rgba(20,28,40,.11);--shadow:0 24px 70px rgba(56,71,102,.16)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 10% -5%,rgba(124,92,255,.24),transparent 33%),radial-gradient(circle at 95% 10%,rgba(38,214,255,.17),transparent 32%),linear-gradient(140deg,var(--bg),var(--bg2));min-height:100vh;overflow-x:hidden}body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(to bottom,black,transparent 90%)}body.loading-lock{overflow:hidden}.drawer-lock,.modal-lock{overflow:hidden}
+    button,input,select{font:inherit}.app{width:min(1180px,100%);margin:0 auto;padding:18px 18px 60px}.topbar{position:sticky;top:14px;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);border-radius:18px}.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none}.brand img{width:44px;height:44px;object-fit:cover;border-radius:13px;border:1px solid var(--line)}.brand b{font-size:16px;letter-spacing:.2px}.brand span{font-size:11px;color:var(--muted);display:block;margin-top:2px}.top-actions{display:flex;align-items:center;gap:9px}.icon-button,.menu-button{border:1px solid var(--line);background:var(--card2);color:var(--text);width:42px;height:42px;border-radius:13px;display:grid;place-items:center;cursor:pointer;transition:.2s}.icon-button:hover,.menu-button:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.45);background:rgba(124,92,255,.10)}.hamburger{width:18px;height:14px;display:grid;align-content:space-between}.hamburger span{display:block;height:2px;border-radius:2px;background:currentColor}.hero{padding:72px 4px 30px;display:grid;grid-template-columns:1.25fr .75fr;gap:22px;align-items:end}.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card2);font-size:12px;color:var(--muted)}.pulse{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 6px rgba(66,220,159,.1)}h1{font-size:clamp(37px,6vw,70px);line-height:.98;letter-spacing:-2.8px;margin:16px 0 16px;max-width:760px}.hero p{font-size:16px;line-height:1.75;color:var(--muted);max-width:700px;margin:0}.hero-panel{border:1px solid var(--line);background:var(--card);backdrop-filter:blur(var(--blur));border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}.hero-panel strong{display:block;font-size:14px;margin-bottom:10px}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--card2)}.stat small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.stat b{font-size:15px}
+    .section-grid{display:grid;grid-template-columns:1.3fr .9fr;gap:22px;align-items:start}.panel{border:1px solid var(--line);background:var(--card);backdrop-filter:blur(var(--blur));border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:22px 22px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line)}.panel-title{display:flex;gap:13px;align-items:flex-start}.panel-icon{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);background:var(--card2);border-radius:14px;font-size:21px}.panel-head h2{font-size:18px;margin:0 0 5px}.panel-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}.status-pill{font-size:10px;padding:7px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}.status-pill[data-tone="success"]{color:var(--good);border-color:rgba(66,220,159,.25)}.status-pill[data-tone="warning"]{color:var(--warn);border-color:rgba(245,191,84,.25)}.status-pill[data-tone="error"]{color:var(--bad);border-color:rgba(255,102,126,.25)}
+    .panel-body{padding:22px}.email-display{display:flex;gap:10px;align-items:center;padding:14px;border:1px solid var(--line);background:rgba(0,0,0,.09);border-radius:18px}.email-display input{flex:1;min-width:0;border:0;background:transparent;outline:0;color:var(--text);font-size:15px;font-weight:700}.primary,.secondary,.danger,.ghost{border:1px solid var(--line);border-radius:13px;padding:11px 13px;cursor:pointer;transition:.2s;font-weight:700}.primary{color:white;border-color:transparent;background:linear-gradient(135deg,var(--accent),#a34eff);box-shadow:0 14px 34px rgba(124,92,255,.28)}.primary:hover{transform:translateY(-1px)}.secondary{background:var(--card2);color:var(--text)}.danger{background:rgba(255,102,126,.08);border-color:rgba(255,102,126,.22);color:var(--bad)}.ghost{background:transparent;color:var(--muted)}.button-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.mini{font-size:12px;padding:8px 10px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:7px}.field input,.field select{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:13px;outline:0;background:var(--card2);color:var(--text)}.field input:focus,.field select:focus{border-color:rgba(124,92,255,.55);box-shadow:0 0 0 4px rgba(124,92,255,.09)}.field.full{grid-column:1/-1}.field-hint{font-size:10px;color:var(--muted);margin-top:6px}.countdown{margin-left:auto;font-size:11px;color:var(--muted)}.inbox-head{margin-top:20px;display:flex;align-items:center;gap:10px}.inbox-head h3{font-size:13px;margin:0}.count-badge{min-width:24px;height:24px;display:grid;place-items:center;padding:0 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px}.message-list{display:grid;gap:8px;margin-top:10px}.message-row{width:100%;border:1px solid var(--line);background:rgba(0,0,0,.06);color:var(--text);display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;text-align:left;align-items:center;padding:12px;border-radius:14px;cursor:pointer}.message-row:hover{background:var(--card2);border-color:rgba(38,214,255,.25)}.message-avatar{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:rgba(38,214,255,.10);color:var(--accent2)}.message-main{min-width:0}.message-main strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.message-main small{display:block;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}.message-meta{color:var(--muted);font-size:10px;white-space:nowrap}.empty-state,.menu-empty{border:1px dashed var(--line);border-radius:16px;padding:22px;text-align:center;color:var(--muted);font-size:12px;margin-top:10px}
+    .key-wrap{position:relative}.key-wrap input{padding-right:86px}.key-tools{position:absolute;right:7px;top:7px;display:flex;gap:4px}.key-tools button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;padding:6px 7px;border-radius:8px}.key-tools button:hover{background:var(--card2);color:var(--text)}.result{margin-top:16px;padding:14px;border:1px solid rgba(66,220,159,.18);border-radius:18px;background:rgba(66,220,159,.045)}.result-grid{display:grid;grid-template-columns:1fr 206px;gap:14px;align-items:center}.result input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--text);font-size:12px}.qr-card{background:white;border-radius:14px;padding:8px;display:grid;place-items:center}.qr-card > div{min-height:190px}.history-head{display:flex;justify-content:space-between;align-items:center;margin-top:22px}.history-head h3{font-size:13px;margin:0}.history-list{display:grid;gap:8px;margin-top:10px}.history-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.05)}.history-item strong{display:block;font-size:12px}.history-item small{display:block;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}.mini-copy{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;padding:7px 9px;cursor:pointer;font-size:11px}.info-card{padding:16px 18px;color:var(--muted);font-size:12px;line-height:1.75}.info-card strong{color:var(--text)}footer{display:flex;justify-content:space-between;gap:12px;margin-top:22px;color:var(--muted);font-size:11px;padding:8px 4px}.footer-links{display:flex;gap:13px}.footer-links a{color:inherit;text-decoration:none}.footer-links a:hover{color:var(--text)}
+    .app-loader{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,rgba(124,92,255,.16),transparent 34%),linear-gradient(135deg,#07080d,#111521);transition:opacity .5s ease,visibility .5s ease}.app-loader.fade-out{opacity:0;visibility:hidden}.loader-inner{text-align:center}.loader-logo{width:88px;height:88px;object-fit:cover;border-radius:24px;border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 65px rgba(0,0,0,.35);opacity:.86}.loader-ring{width:118px;height:118px;border-radius:50%;border:2px solid rgba(255,255,255,.12);border-top-color:var(--accent2);border-right-color:var(--accent);animation:spin 1.1s linear infinite;position:absolute;transform:translate(-15px,-15px)}.loader-spinner{position:relative;width:118px;height:118px;display:grid;place-items:center;margin:0 auto 22px}.loader-inner p{margin:0;color:#aab3c1;font-size:12px;letter-spacing:.18em;text-transform:uppercase}.loader-inner small{display:block;color:#6d7786;margin-top:8px;font-size:10px}@keyframes spin{to{transform:translate(-15px,-15px) rotate(360deg)}}
+    .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.46);backdrop-filter:blur(5px);z-index:70;opacity:0;visibility:hidden;transition:.25s}.drawer-backdrop.open{opacity:1;visibility:visible}.drawer{position:fixed;z-index:80;top:0;right:0;width:min(390px,92vw);height:100dvh;background:var(--card);backdrop-filter:blur(26px);border-left:1px solid var(--line);transform:translateX(101%);transition:transform .32s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding:22px}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;justify-content:space-between;align-items:center}.drawer-brand{display:flex;align-items:center;gap:10px}.drawer-brand img{width:42px;height:42px;border-radius:12px}.drawer-brand strong{display:block}.drawer-brand small{color:var(--muted);font-size:10px}.drawer-body{overflow:auto;padding-top:22px}.drawer-section{margin-bottom:20px}.drawer-section h3{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:0 0 9px}.drawer-link{width:100%;display:flex;gap:10px;align-items:center;padding:12px 13px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:13px;text-align:left;cursor:pointer}.drawer-link:hover{background:var(--card2);border-color:var(--line)}.drawer-link-icon{width:27px;height:27px;display:grid;place-items:center;border-radius:9px;background:var(--card2);color:var(--accent2);font-size:12px}.theme-row{display:flex;align-items:center;justify-content:space-between;padding:13px;border:1px solid var(--line);border-radius:13px;background:var(--card2)}.theme-row span{font-size:12px}.theme-row button{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:9px;padding:8px 10px;font-size:11px;cursor:pointer}
+    .modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.58);backdrop-filter:blur(9px);opacity:0;visibility:hidden;transition:.2s}.modal.open{opacity:1;visibility:visible}.modal-card{width:min(1100px,100%);max-height:min(92dvh,900px);display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;transform:translateY(10px);transition:.2s}.modal.open .modal-card{transform:translateY(0)}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}.modal-head h3{font-size:14px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.modal-content{min-height:0;overflow:auto}.iframe-wrap{position:relative;height:min(78dvh,800px);background:white}.iframe-wrap iframe{width:100%;height:100%;border:0;display:block}.iframe-loader{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.9);color:#111}.iframe-loader div{text-align:center}.tiny-spinner{width:30px;height:30px;border:3px solid #ddd;border-top-color:#444;border-radius:50%;animation:spin2 .8s linear infinite;margin:0 auto 8px}@keyframes spin2{to{transform:rotate(360deg)}}.message-modal-content{padding:18px}.mail-details{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}.mail-details>div{padding:12px;border:1px solid var(--line);border-radius:12px}.mail-details span{display:block;color:var(--muted);font-size:10px;margin-bottom:3px}.mail-details strong{font-size:12px;word-break:break-word}.mail-content-box{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}.mail-content-box pre{white-space:pre-wrap;word-break:break-word;padding:16px;margin:0;line-height:1.65;font-family:inherit;font-size:12px}.mail-html-frame{width:100%;height:55dvh;border:0;background:white}.attachments{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.attachments h4{width:100%;font-size:12px;margin:0}.attachments a,.attachments span{font-size:11px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;color:var(--text);text-decoration:none}
+    .toast-host{position:fixed;right:18px;bottom:18px;z-index:500;display:grid;gap:9px;max-width:min(380px,calc(100vw - 36px))}.toast{opacity:0;transform:translateY(10px);display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:13px;border:1px solid var(--line);background:rgba(17,20,27,.92);color:#f8f9fc;box-shadow:0 16px 45px rgba(0,0,0,.35);backdrop-filter:blur(16px);font-size:12px;transition:.2s}.toast.show{opacity:1;transform:translateY(0)}.toast-dot{width:8px;height:8px;border-radius:50%;background:#9aa3b2}.toast-success .toast-dot{background:var(--good)}.toast-warning .toast-dot{background:var(--warn)}.toast-error .toast-dot{background:var(--bad)}.confirm-card{width:min(450px,100%);padding:22px}.confirm-card h3{margin:0 0 8px;font-size:16px}.confirm-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}.confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.hidden{display:none!important}
+    @media (max-width:900px){.hero,.section-grid{grid-template-columns:1fr}.hero{padding-top:48px}.hero-panel{max-width:none}.result-grid{grid-template-columns:1fr 190px}}
+    @media (max-width:640px){.app{padding:10px 11px 45px}.topbar{top:8px}.brand img{width:40px;height:40px}.hero{padding:42px 2px 22px}.hero p{font-size:14px}.panel-head,.panel-body{padding:16px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.email-display{align-items:stretch;flex-direction:column}.button-row .primary,.button-row .secondary,.button-row .danger{flex:1}.result-grid{grid-template-columns:1fr}.qr-card{width:204px}.message-row{grid-template-columns:34px minmax(0,1fr)}.message-meta{display:none}footer{flex-direction:column}.mail-details{grid-template-columns:1fr}.drawer{padding:17px}.modal{padding:8px}.modal-card{border-radius:17px}.iframe-wrap{height:84dvh}}
+  </style>
 </head>
-<body>
-  <div class="background-orb orb-a"></div>
-  <div class="background-orb orb-b"></div>
-  <div class="background-grid"></div>
-
-  <header class="topbar glass-panel">
-    <div class="brand-wrap">
-      <button id="menuToggle" class="icon-button" type="button" aria-label="Mở menu">☰</button>
-      <a href="./index.html" class="brand" aria-label="TDM Dev home">
-        <img src="./logo.png" alt="TDM Dev" class="brand-logo">
-        <div><strong>TDM Dev</strong><span>Tools for everyone</span></div>
-      </a>
+<body class="loading-lock">
+  <div id="app-loader" class="app-loader" aria-live="polite">
+    <div class="loader-inner">
+      <div class="loader-spinner"><div class="loader-ring"></div><img class="loader-logo" src="./logo.png" alt="TDM Dev"></div>
+      <p>Đang khởi động TDM Dev</p>
+      <small>Đang tải menu Firebase & tạo email tạm thời…</small>
     </div>
-    <div class="topbar-actions">
-      <div id="authState" class="auth-state" hidden><span id="authUserName">TDM User</span><button id="authLogout" class="button button-small">Đăng xuất</button></div>
-      <button id="authTrigger" class="button button-ghost">Đăng nhập</button>
-      <button id="themeToggle" class="icon-button" type="button" aria-label="Đổi giao diện">🌙</button>
-    </div>
-  </header>
+  </div>
 
-  <aside id="sidebar" class="sidebar glass-panel" aria-label="Menu điều hướng">
-    <div class="sidebar-head"><div><span class="eyebrow">TDM Dev</span><h2>Menu</h2></div><button id="menuClose" class="icon-button">×</button></div>
-    <nav class="menu-list">
-      <button class="menu-item default-menu-link" data-target="#homeSection"><span class="menu-item-icon">⌂</span><span>Trang chủ</span></button>
-      <button class="menu-item default-menu-link" data-target="#tempMailSection"><span class="menu-item-icon">✉</span><span>Temp Mail</span></button>
-      <button class="menu-item default-menu-link" data-target="#link4mSection"><span class="menu-item-icon">↗</span><span>Rút gọn Link</span></button>
-      <a href="./admin.html" class="menu-item"><span class="menu-item-icon">⚙</span><span>Đăng nhập Admin</span></a>
-      <div class="menu-divider"></div>
-      <div class="menu-caption">Tính năng thêm</div>
-      <div id="dynamicMenuList"></div>
-    </nav>
+  <div id="drawer-backdrop" class="drawer-backdrop"></div>
+  <aside id="app-drawer" class="drawer" aria-label="Menu điều hướng">
+    <div class="drawer-head">
+      <div class="drawer-brand"><img src="./logo.png" alt="TDM Dev"><div><strong>TDM Dev</strong><small>Công cụ tiện ích</small></div></div>
+      <button id="drawer-close" class="icon-button" type="button" aria-label="Đóng menu">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <h3>Nhanh</h3>
+        <button class="drawer-link" type="button" onclick="document.getElementById('temp-mail').scrollIntoView({behavior:'smooth'});document.getElementById('drawer-close').click()"><span class="drawer-link-icon">✉</span><span>Email Tạm Thời</span></button>
+        <button class="drawer-link" type="button" onclick="document.getElementById('link4m').scrollIntoView({behavior:'smooth'});document.getElementById('drawer-close').click()"><span class="drawer-link-icon">↗</span><span>Rút Gọn Link</span></button>
+        <a class="drawer-link" href="./admin.html" style="text-decoration:none"><span class="drawer-link-icon">⚙</span><span>Admin Panel</span></a>
+      </div>
+      <div class="drawer-section">
+        <h3>Menu động từ Firebase</h3>
+        <div id="dynamic-menu"><div class="menu-empty">Đang tải menu…</div></div>
+      </div>
+      <div class="drawer-section">
+        <h3>Giao diện</h3>
+        <div class="theme-row"><span id="theme-toggle-label">Chế độ sáng</span><button id="theme-toggle" type="button">Đổi theme</button></div>
+      </div>
+      <div class="info-card"><strong>TDM Dev</strong><br>Frontend thuần HTML/CSS/JS. CSS được gộp trực tiếp trong từng HTML để giảm request HTTP và giữ repo gọn. Dữ liệu menu đi qua backend Railway → Firestore.</div>
+    </div>
   </aside>
-  <div id="menuBackdrop" class="overlay"></div>
 
-  <main>
-    <section id="homeSection" class="hero section-shell">
-      <div class="hero-copy">
-        <span class="eyebrow">TDM DEV • SIMPLE • PRIVATE</span>
-        <h1>Hai công cụ cần thiết, <span>một nơi.</span></h1>
-        <p>Tạo email tạm thời và rút gọn link Link4M với giao diện gọn, nhanh, responsive trên điện thoại lẫn máy tính.</p>
-        <div class="hero-actions"><button class="button" data-scroll="#tempMailSection">Dùng Temp Mail</button><button class="button button-ghost" data-scroll="#link4mSection">Rút gọn Link</button></div>
+  <main class="app">
+    <header class="topbar">
+      <a class="brand" href="#top"><img src="./logo.png" alt="TDM Dev"><div><b>TDM Dev</b><span>Temp Mail • Link4M</span></div></a>
+      <div class="top-actions"><button id="hamburger" class="menu-button" type="button" aria-label="Mở menu"><span class="hamburger"><span></span><span></span><span></span></span></button></div>
+    </header>
+
+    <section id="top" class="hero">
+      <div>
+        <div class="eyebrow"><span class="pulse"></span> Dịch vụ đang hoạt động</div>
+        <h1>Hai công cụ.<br>Một không gian gọn gàng.</h1>
+        <p>Tạo email tạm thời, kiểm tra inbox nhanh và rút gọn link với Link4M. Giao diện tập trung vào tốc độ, dễ dùng trên điện thoại và không làm lộ API key trong mã nguồn frontend.</p>
       </div>
-      <div class="hero-card glass-panel">
-        <div class="hero-stat"><span>01</span><strong>Temp Mail</strong><small>Nhận email tạm thời</small></div>
-        <div class="hero-stat"><span>02</span><strong>Link4M</strong><small>Short link + QR</small></div>
-        <div class="hero-stat"><span>03</span><strong>Firebase Auth</strong><small>Email/Password + Google</small></div>
-      </div>
+      <div class="hero-panel"><strong>Tình trạng hệ thống</strong><div class="stats"><div class="stat"><small>Temp Mail</small><b id="hero-mail-status">Đang kết nối…</b></div><div class="stat"><small>Link4M</small><b>API v2</b></div></div></div>
     </section>
 
-    <section id="tempMailSection" class="section-shell">
-      <div class="section-heading"><div><span class="eyebrow">01 • TEMP MAIL</span><h2>Email tạm thời</h2><p>Tự tạo hộp thư, tự động kiểm tra thư mới theo chu kỳ ngắn.</p></div><div class="live-pill"><i></i> Live <span id="refreshCountdown">10s</span></div></div>
-      <div class="feature-grid temp-grid">
-        <article class="glass-panel temp-card">
-          <div class="mail-head"><div><span class="eyebrow">Địa chỉ hiện tại</span><div id="tempEmailAddress" class="mail-address">Đang tạo…</div><div id="mailStatus" class="mail-status">Đang khởi tạo hộp thư</div></div><div class="mail-icon">✉</div></div>
-          <div class="mail-controls"><div class="input-wrap"><label for="emailPrefix">Prefix tùy chọn</label><input id="emailPrefix" autocomplete="off" placeholder="vd: tdmdev123"></div><button id="newEmail" class="button">Đổi email mới</button><button id="copyEmail" class="button button-ghost">Copy</button><button id="refreshMail" class="button button-ghost">↻</button><button id="deleteEmail" class="button button-danger">Xóa hộp thư</button></div>
-        </article>
-        <article class="glass-panel inbox-card">
-          <div class="card-title-row"><div><h3>Hộp thư đến</h3><p>Thư mới sẽ xuất hiện tự động.</p></div><span class="count-badge" id="messageCount">0</span></div>
-          <div id="messageList"></div>
-        </article>
-      </div>
-    </section>
-
-    <section id="link4mSection" class="section-shell">
-      <div class="section-heading"><div><span class="eyebrow">02 • LINK4M</span><h2>Rút gọn Link</h2><p>API Key chỉ được lưu cục bộ trên thiết bị và được proxy qua backend TDM Dev.</p></div></div>
-      <div class="feature-grid link-grid">
-        <article class="glass-panel tool-card">
-          <form id="link4mForm">
-            <div class="input-wrap"><label for="link4mApiKey">Link4M API Key</label><div class="password-row"><input id="link4mApiKey" type="password" autocomplete="off" placeholder="Nhập API Key cá nhân"><button id="link4mKeyToggle" class="inside-button" type="button">Hiện</button></div><button id="link4mChangeKey" class="text-button" type="button">Đổi API Key đã lưu</button></div>
-            <div class="two-col"><div class="input-wrap"><label for="linkTitle">Tiêu đề / ghi chú</label><input id="linkTitle" placeholder="Ví dụ: Link Facebook"></div><div class="input-wrap"><label for="destinationUrl">Link gốc</label><input id="destinationUrl" type="url" placeholder="https://example.com/rat-dai"></div></div>
-            <button id="shortenButton" class="button button-wide" type="submit">Rút gọn Link ↗</button>
-          </form>
-          <div id="linkResult" class="result-panel">
-            <div><span class="eyebrow">Kết quả</span><a id="resultLink" class="result-link" target="_blank" rel="noopener noreferrer"></a></div><button id="copyShortLink" class="button button-small">Copy</button>
-            <div id="qrCode" class="qr-box"></div>
+    <section class="section-grid">
+      <article id="temp-mail" class="panel">
+        <div class="panel-head"><div class="panel-title"><div class="panel-icon">✉</div><div><h2>Email Tạm Thời</h2><p>TempMail.id.vn API v2 • tự tạo hộp thư khi mở trang</p></div></div><div id="temp-status" class="status-pill" data-tone="">Đang khởi tạo…</div></div>
+        <div class="panel-body">
+          <div class="email-display"><input id="temp-email" aria-label="Email tạm thời" readonly value="Đang tạo email…"><button id="copy-email" class="primary mini" type="button">Copy</button></div>
+          <div class="button-row"><button id="create-email" class="primary" type="button">+ Đổi Email mới</button><button id="refresh-mail" class="secondary" type="button">↻ Làm mới <span class="countdown" id="temp-countdown">7s</span></button><button id="delete-mailbox" class="danger" type="button">Xóa hộp thư</button></div>
+          <div class="form-grid">
+            <div class="field"><label for="temp-prefix">Prefix tự chọn</label><input id="temp-prefix" maxlength="48" placeholder="Để trống = ngẫu nhiên"></div>
+            <div class="field"><label for="temp-domain">Domain</label><select id="temp-domain"><option value="">Tự động chọn domain</option></select></div>
+            <div class="field full"><div class="field-hint">Nút “Random” chỉ thay prefix; domain thực tế được API TempMail cấp và kiểm soát.</div></div>
           </div>
-        </article>
-        <article class="glass-panel tool-card"><div class="card-title-row"><div><h3>Lịch sử trên thiết bị</h3><p>Không gửi lịch sử này lên Firebase.</p></div></div><div id="linkHistory"></div></article>
-      </div>
+          <div class="button-row"><button id="random-prefix" class="ghost mini" type="button">🎲 Tạo prefix ngẫu nhiên</button></div>
+          <div class="inbox-head"><h3>Hộp thư đến</h3><span id="message-count" class="count-badge">0</span></div>
+          <div id="message-list" class="message-list"></div>
+          <div id="message-empty" class="empty-state">Chưa có thư mới. Hệ thống sẽ tự kiểm tra theo chu kỳ.</div>
+        </div>
+      </article>
+
+      <article id="link4m" class="panel">
+        <div class="panel-head"><div class="panel-title"><div class="panel-icon">↗</div><div><h2>Rút Gọn Link</h2><p>Link4M API v2 • API Key được lưu trên thiết bị</p></div></div><div class="status-pill" data-tone="success">Ready</div></div>
+        <div class="panel-body">
+          <div class="field"><label for="link4m-api-key">Link4M API Key</label><div class="key-wrap"><input id="link4m-api-key" type="password" autocomplete="off" placeholder="Nhập API Key của bạn"><div class="key-tools"><button id="toggle-api-key" type="button">Hiện</button><button id="change-api-key" type="button">Đổi</button></div></div><div class="field-hint" id="key-saved-label">Chưa lưu</div></div>
+          <div class="form-grid">
+            <div class="field"><label for="link4m-title">Tiêu đề Link</label><input id="link4m-title" maxlength="120" placeholder="Ví dụ: TDM Dev chính thức"></div>
+            <div class="field"><label for="link4m-url">Link gốc</label><input id="link4m-url" type="url" inputmode="url" placeholder="https://example.com"></div>
+          </div>
+          <div class="button-row"><button id="shorten-button" class="primary" type="button">Rút gọn Link</button></div>
+          <div id="short-result" class="result" hidden>
+            <div class="result-grid"><div><div class="field-hint" style="margin-bottom:6px">Link rút gọn</div><input id="short-url" readonly><div class="button-row"><button id="copy-short" class="secondary mini" type="button">Copy Link</button></div></div><div class="qr-card"><div id="qrcode"></div></div></div>
+          </div>
+          <div class="history-head"><h3>Lịch sử trên thiết bị</h3><button id="clear-history" class="ghost mini" type="button">Xóa lịch sử</button></div>
+          <div id="link-history" class="history-list"></div>
+          <div id="link-history-empty" class="empty-state">Chưa có link rút gọn nào.</div>
+        </div>
+      </article>
     </section>
 
-    <section class="section-shell trust-strip"><div class="glass-panel trust-card"><span>🔐 Credential server-side</span><span>⚡ Vanilla JS</span><span>☁️ Firestore</span><span>🌙 Dark / Light</span></div></section>
+    <footer><div>© 2026 TDM Dev</div><div class="footer-links"><a href="https://tempmail.id.vn/en/p/api" target="_blank" rel="noopener">TempMail API</a><a href="https://link4m.co" target="_blank" rel="noopener">Link4M</a><a href="./admin.html">Admin</a></div></footer>
   </main>
 
-  <footer class="footer"><span>© <span id="year"></span> TDM Dev</span><span>Temp Mail • Link4M</span></footer>
+  <div id="iframe-modal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="iframe-title">Xem nội dung</h3><button class="icon-button" type="button" data-close-modal="iframe-modal">×</button></div>
+      <div class="modal-content"><div class="iframe-wrap"><div id="iframe-loader" class="iframe-loader"><div><div class="tiny-spinner"></div><small>Đang tải trang…</small></div></div><iframe id="iframe-target" title="Nội dung menu" referrerpolicy="no-referrer"></iframe></div></div>
+    </div>
+  </div>
 
-  <div id="iframeModal" class="modal"><div id="iframeBackdrop" class="modal-backdrop"></div><div class="modal-card iframe-modal-card glass-panel"><div class="modal-head"><div><span class="eyebrow">TDM DEV WEB VIEW</span><h3 id="iframeTitle">Web View</h3></div><button id="iframeClose" class="icon-button">×</button></div><iframe id="iframeView" title="Embedded web" referrerpolicy="no-referrer"></iframe></div></div>
+  <div id="message-modal" class="modal" hidden>
+    <div class="modal-card" style="width:min(920px,100%)"><div class="modal-head"><h3 id="message-modal-title">Email</h3><button class="icon-button" type="button" data-close-modal="message-modal">×</button></div><div id="message-modal-body" class="modal-content message-modal-content"></div></div>
+  </div>
 
-  <div id="emailModal" class="modal"><div id="emailBackdrop" class="modal-backdrop"></div><div class="modal-card glass-panel email-modal-card"><div class="modal-head"><div><span class="eyebrow">EMAIL</span><h3 id="emailModalTitle">Nội dung thư</h3><p id="emailMeta"></p></div><button id="emailClose" class="icon-button">×</button></div><div id="emailContent" class="email-content"></div><div id="emailAttachments" class="attachments"></div></div></div>
+  <div id="confirm-modal" class="modal" hidden><div class="confirm-card panel"><h3 id="confirm-title">Xác nhận</h3><p id="confirm-message"></p><div class="confirm-actions"><button id="confirm-cancel" class="secondary" type="button">Hủy</button><button id="confirm-ok" class="danger" type="button">Xác nhận</button></div></div></div>
+  <div id="toast-host" class="toast-host" aria-live="polite"></div>
 
-  <div id="authModal" class="modal"><div id="authBackdrop" class="modal-backdrop"></div><div class="modal-card auth-modal-card glass-panel"><div class="modal-head"><div><span class="eyebrow">TDM DEV ACCOUNT</span><h3 id="authModeTitle">Đăng nhập</h3></div><button id="authClose" class="icon-button">×</button></div><form id="authForm"><div id="authNameField" class="input-wrap" hidden><label for="authName">Họ tên</label><input id="authName" autocomplete="name" placeholder="Tên hiển thị"></div><div class="input-wrap"><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="input-wrap"><label for="authPassword">Mật khẩu</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="••••••••"></div><button id="authSubmit" class="button button-wide" type="submit">Đăng nhập</button></form><div class="auth-divider"><span>hoặc</span></div><button id="googleSignIn" class="google-button" type="button"><span class="google-g">G</span> Tiếp tục với Google</button><button id="authSwitch" class="text-button centered" type="button">Chưa có tài khoản? Đăng ký</button></div></div>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
   <script type="module" src="./js/main.js"></script>
-  <script>document.getElementById('year').textContent = new Date().getFullYear(); document.querySelectorAll('[data-scroll]').forEach(b => b.addEventListener('click', () => document.querySelector(b.dataset.scroll)?.scrollIntoView({behavior:'smooth'})));</script>
 </body>
 </html>
