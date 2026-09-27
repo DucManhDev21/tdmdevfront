@@ -1,190 +1,200 @@
-import { CONFIG, backendUrl } from './config.js';
+import CONFIG from './config.js';
 
-const TOKEN_KEY = 'tdm-admin-token';
-const $ = (selector, scope = document) => scope.querySelector(selector);
-let editingId = null;
-let menuItems = [];
-let stream = null;
+const TOKEN_KEY = 'tdmdev_admin_token';
+const $ = (id) => document.getElementById(id);
 
-function show(message, type = 'info') {
-  const node = $('#adminToast');
-  if (!node) return;
-  node.textContent = message;
-  node.dataset.type = type;
-  node.classList.add('is-visible');
-  window.clearTimeout(show.timer);
-  show.timer = window.setTimeout(() => node.classList.remove('is-visible'), 2800);
+let menus = [];
+let editingId = '';
+
+function apiUrl(path) {
+  return `${CONFIG.BACKEND_URL.replace(/\/$/, '')}${path}`;
 }
 
-function token() { return localStorage.getItem(TOKEN_KEY) || ''; }
+function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
+function authHeaders() { return { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }; }
 
 async function request(path, options = {}) {
-  const headers = new Headers(options.headers || {});
-  const adminToken = token();
-  if (adminToken) headers.set('Authorization', `Bearer ${adminToken}`);
-  if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  const response = await fetch(backendUrl(path), { ...options, headers });
+  const response = await fetch(apiUrl(path), {
+    ...options,
+    headers: { ...authHeaders(), ...(options.headers || {}) }
+  });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem(TOKEN_KEY);
-      show('Phiên admin đã hết hạn. Vui lòng đăng nhập lại.', 'error');
-    }
-    throw new Error(payload?.message || 'Admin request failed.');
+  if (!response.ok || payload.ok === false) {
+    const error = new Error(payload.message || payload.error || `HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
   return payload;
 }
 
-function setLoggedIn(loggedIn) {
-  $('#adminLoginCard').hidden = loggedIn;
-  $('#adminPanel').hidden = !loggedIn;
-  $('#adminLogout').hidden = !loggedIn;
+function escapeText(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
-function clearForm() {
-  editingId = null;
-  $('#menuForm')?.reset();
-  $('#menuOrder').value = '0';
-  $('#formTitle').textContent = 'Thêm mục menu';
-  $('#cancelEdit').hidden = true;
+function showToast(message, type = 'info') {
+  const host = $('admin-toast');
+  const toast = document.createElement('div');
+  toast.className = `admin-toast-item ${type}`;
+  toast.textContent = message;
+  host.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
 }
 
-function renderMenus() {
-  const body = $('#menuTableBody');
-  const empty = $('#adminMenuEmpty');
-  if (!body) return;
-  body.innerHTML = '';
-  if (!menuItems.length) {
-    empty.hidden = false;
-    return;
-  }
-  empty.hidden = true;
-  menuItems.forEach((item) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${escapeHtml(String(item.order))}</td>
-      <td><strong>${escapeHtml(item.title)}</strong></td>
-      <td>${item.type === 'iframe' ? 'iFrame Modal' : 'Tab mới'}</td>
-      <td><a href="${escapeAttribute(item.url)}" target="_blank" rel="noopener noreferrer">Mở</a></td>
-      <td><span class="status-badge ${item.enabled ? 'is-on' : ''}">${item.enabled ? 'Hiện' : 'Ẩn'}</span></td>
-      <td><div class="table-actions"><button class="button button-small" data-edit="${item.id}">Sửa</button><button class="button button-small button-danger" data-delete="${item.id}">Xóa</button></div></td>
-    `;
-    body.appendChild(row);
-  });
-  body.querySelectorAll('[data-edit]').forEach((button) => button.addEventListener('click', () => startEdit(button.dataset.edit)));
-  body.querySelectorAll('[data-delete]').forEach((button) => button.addEventListener('click', () => deleteMenu(button.dataset.delete)));
-}
-
-function escapeHtml(value) {
-  const div = document.createElement('div');
-  div.textContent = value ?? '';
-  return div.innerHTML;
-}
-function escapeAttribute(value) {
-  return String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-async function loadMenus() {
-  const payload = await request('/api/admin/menus');
-  menuItems = Array.isArray(payload.menus) ? payload.menus : [];
-  renderMenus();
-}
-
-function connectAdminStream() {
-  if (!token() || !window.EventSource) return;
-  stream?.close();
-  stream = new EventSource(backendUrl('/api/menu/stream'));
-  stream.addEventListener('menus', (event) => {
-    try {
-      const payload = JSON.parse(event.data);
-      menuItems = Array.isArray(payload.menus) ? payload.menus : [];
-      renderMenus();
-    } catch {}
-  });
-}
-
-function startEdit(id) {
-  const item = menuItems.find((entry) => entry.id === id);
-  if (!item) return;
-  editingId = id;
-  $('#formTitle').textContent = 'Sửa mục menu';
-  $('#menuTitle').value = item.title || '';
-  $('#menuType').value = item.type || 'external';
-  $('#menuUrl').value = item.url || '';
-  $('#menuOrder').value = String(item.order ?? 0);
-  $('#menuEnabled').checked = item.enabled !== false;
-  $('#cancelEdit').hidden = false;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-async function deleteMenu(id) {
-  if (!window.confirm('Bạn chắc chắn muốn xóa mục menu này?')) return;
+async function login() {
+  const password = $('admin-password').value;
+  $('admin-login-button').disabled = true;
   try {
-    await request(`/api/admin/menus/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    show('Đã xóa menu.', 'success');
-    await loadMenus();
-  } catch (error) { show(error.message, 'error'); }
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-  const button = $('#adminLoginButton');
-  const password = $('#adminPassword').value;
-  button.disabled = true;
-  try {
-    const response = await fetch(backendUrl('/api/admin/login'), {
+    const response = await fetch(apiUrl('/api/admin/login'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ password })
     });
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload?.message || 'Đăng nhập thất bại.');
-    localStorage.setItem(TOKEN_KEY, payload.accessToken);
-    setLoggedIn(true);
-    $('#adminPassword').value = '';
-    await loadMenus();
-    connectAdminStream();
-    show('Đăng nhập quản trị thành công.', 'success');
-  } catch (error) { show(error.message, 'error'); }
-  finally { button.disabled = false; }
-}
-
-async function handleMenuSubmit(event) {
-  event.preventDefault();
-  const payload = {
-    title: $('#menuTitle').value.trim(),
-    type: $('#menuType').value,
-    url: $('#menuUrl').value.trim(),
-    order: Number($('#menuOrder').value || 0),
-    enabled: $('#menuEnabled').checked
-  };
-  try {
-    if (editingId) {
-      await request(`/api/admin/menus/${encodeURIComponent(editingId)}`, { method: 'PUT', body: JSON.stringify(payload) });
-      show('Đã cập nhật menu.', 'success');
-    } else {
-      await request('/api/admin/menus', { method: 'POST', body: JSON.stringify(payload) });
-      show('Đã thêm menu.', 'success');
-    }
-    clearForm();
-    await loadMenus();
-  } catch (error) { show(error.message, 'error'); }
-}
-
-function init() {
-  $('#adminLoginForm')?.addEventListener('submit', handleLogin);
-  $('#menuForm')?.addEventListener('submit', handleMenuSubmit);
-  $('#cancelEdit')?.addEventListener('click', clearForm);
-  $('#adminLogout')?.addEventListener('click', () => {
-    localStorage.removeItem(TOKEN_KEY);
-    stream?.close();
-    setLoggedIn(false);
-    show('Đã đăng xuất admin.', 'success');
-  });
-  setLoggedIn(Boolean(token()));
-  if (token()) {
-    loadMenus().then(connectAdminStream).catch(() => setLoggedIn(false));
+    if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Đăng nhập thất bại.');
+    sessionStorage.setItem(TOKEN_KEY, payload.token);
+    showDashboard();
+    showToast('Đăng nhập quản trị thành công.', 'success');
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    $('admin-login-button').disabled = false;
   }
 }
 
-init();
+function logout() {
+  sessionStorage.removeItem(TOKEN_KEY);
+  window.location.reload();
+}
+
+async function loadMenus() {
+  const response = await request('/api/menu', { headers: { Accept: 'application/json', Authorization: `Bearer ${token()}` } });
+  menus = Array.isArray(response.menus) ? response.menus : [];
+  renderMenus();
+}
+
+function renderMenus() {
+  const container = $('admin-menu-list');
+  $('menu-total').textContent = String(menus.length);
+  if (!menus.length) {
+    container.innerHTML = '<div class="empty-admin">Chưa có mục menu.</div>';
+    return;
+  }
+  container.innerHTML = menus.map((item) => `
+    <article class="admin-menu-card">
+      <div class="menu-card-number">${escapeText(item.order)}</div>
+      <div class="menu-card-body">
+        <div class="menu-card-title-row"><h3>${escapeText(item.title)}</h3><span class="badge">${item.type === 'iframe' ? 'iFrame Modal' : 'External'}</span></div>
+        <p>${escapeText(item.url)}</p>
+      </div>
+      <div class="menu-card-actions">
+        <button type="button" class="secondary" data-edit="${escapeText(item.id)}">Sửa</button>
+        <button type="button" class="danger" data-delete="${escapeText(item.id)}">Xóa</button>
+      </div>
+    </article>
+  `).join('');
+  container.querySelectorAll('[data-edit]').forEach((button) => button.addEventListener('click', () => startEdit(button.dataset.edit)));
+  container.querySelectorAll('[data-delete]').forEach((button) => button.addEventListener('click', () => deleteMenu(button.dataset.delete)));
+}
+
+function resetForm() {
+  editingId = '';
+  $('menu-form-title').textContent = 'Thêm mục menu';
+  $('menu-submit').textContent = 'Lưu menu';
+  $('menu-title').value = '';
+  $('menu-type').value = 'external';
+  $('menu-url').value = '';
+  $('menu-order').value = menus.length ? Math.max(...menus.map((x) => Number(x.order) || 0)) + 10 : 10;
+}
+
+function startEdit(id) {
+  const item = menus.find((menu) => menu.id === id);
+  if (!item) return;
+  editingId = id;
+  $('menu-form-title').textContent = `Chỉnh sửa: ${item.title}`;
+  $('menu-submit').textContent = 'Cập nhật menu';
+  $('menu-title').value = item.title;
+  $('menu-type').value = item.type;
+  $('menu-url').value = item.url;
+  $('menu-order').value = item.order;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function saveMenu(event) {
+  event.preventDefault();
+  const body = {
+    title: $('menu-title').value.trim(),
+    type: $('menu-type').value,
+    url: $('menu-url').value.trim(),
+    order: Number($('menu-order').value)
+  };
+  if (!body.title || !/^https?:\/\//i.test(body.url)) {
+    showToast('Vui lòng nhập tên và URL http/https hợp lệ.', 'warning');
+    return;
+  }
+  $('menu-submit').disabled = true;
+  try {
+    if (editingId) {
+      await request(`/api/menu/${encodeURIComponent(editingId)}`, { method: 'PUT', body: JSON.stringify(body) });
+      showToast('Đã cập nhật menu.', 'success');
+    } else {
+      await request('/api/menu', { method: 'POST', body: JSON.stringify(body) });
+      showToast('Đã thêm menu.', 'success');
+    }
+    await loadMenus();
+    resetForm();
+  } catch (error) {
+    if (error.status === 401) return logout();
+    showToast(error.message, 'error');
+  } finally {
+    $('menu-submit').disabled = false;
+  }
+}
+
+async function deleteMenu(id) {
+  const item = menus.find((menu) => menu.id === id);
+  if (!item) return;
+  if (!window.confirm(`Xóa mục "${item.title}"?`)) return;
+  try {
+    await request(`/api/menu/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    showToast('Đã xóa menu.', 'success');
+    await loadMenus();
+    if (editingId === id) resetForm();
+  } catch (error) {
+    if (error.status === 401) return logout();
+    showToast(error.message, 'error');
+  }
+}
+
+function connectStream() {
+  if (!('EventSource' in window)) return;
+  const source = new EventSource(apiUrl('/api/menu/stream'));
+  source.addEventListener('menu', (event) => {
+    try {
+      menus = JSON.parse(event.data) || [];
+      renderMenus();
+    } catch (_) {}
+  });
+}
+
+function showDashboard() {
+  $('login-screen').hidden = true;
+  $('dashboard').hidden = false;
+  resetForm();
+  loadMenus().catch((error) => {
+    if (error.status === 401) return logout();
+    showToast(error.message, 'error');
+  });
+  connectStream();
+}
+
+function bind() {
+  $('admin-login-form').addEventListener('submit', (event) => { event.preventDefault(); login(); });
+  $('logout-button').addEventListener('click', logout);
+  $('menu-form').addEventListener('submit', saveMenu);
+  $('reset-form').addEventListener('click', resetForm);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  bind();
+  if (token()) showDashboard();
+});

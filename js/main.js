@@ -1,267 +1,227 @@
-import { CONFIG, backendUrl } from './config.js';
-import { TDMAuth } from './auth.js';
+import CONFIG from './config.js';
 import { initTempMail } from './tempmail.js';
 import { initLink4M } from './link4m.js';
 
-const $ = (selector, scope = document) => scope.querySelector(selector);
-const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
+const $ = (id) => document.getElementById(id);
 
-let menuItems = [];
-let toastTimer = null;
-
-export function showToast(message, type = 'info') {
-  const toast = $('#toast');
-  if (!toast) return;
-  clearTimeout(toastTimer);
-  toast.textContent = message;
-  toast.dataset.type = type;
-  toast.classList.add('is-visible');
-  toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 2800);
+function backendUrl(path) {
+  return `${CONFIG.BACKEND_URL.replace(/\/$/, '')}${path}`;
 }
 
-function setTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem('tdm-theme', theme);
-  const button = $('#themeToggle');
-  if (button) {
-    button.textContent = theme === 'dark' ? '☀️' : '🌙';
-    button.setAttribute('aria-label', theme === 'dark' ? 'Bật Light Mode' : 'Bật Dark Mode');
+function escapeText(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+}
+
+
+async function fetchJson(path, options = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(backendUrl(path), { ...options, signal: controller.signal });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+    return payload;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-function initTheme() {
-  const stored = localStorage.getItem('tdm-theme');
-  const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-  setTheme(stored || (systemDark ? 'dark' : 'light'));
-  $('#themeToggle')?.addEventListener('click', () => {
-    setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-  });
+function getMenus(payload) {
+  const list = Array.isArray(payload?.menus) ? payload.menus : Array.isArray(payload) ? payload : [];
+  return list
+    .filter((item) => item && item.title && /^https?:\/\//i.test(item.url || ''))
+    .sort((a, b) => Number(a.order) - Number(b.order));
 }
 
-function openMenu() {
-  $('#sidebar')?.classList.add('is-open');
-  $('#menuBackdrop')?.classList.add('is-visible');
-  document.body.classList.add('menu-open');
+let currentMenus = [];
+
+async function loadMenu() {
+  const payload = await fetchJson('/api/menu', { headers: { Accept: 'application/json' } }, 10000);
+  currentMenus = getMenus(payload);
+  renderMenu(currentMenus);
 }
 
-function closeMenu() {
-  $('#sidebar')?.classList.remove('is-open');
-  $('#menuBackdrop')?.classList.remove('is-visible');
-  document.body.classList.remove('menu-open');
-}
+function renderMenu(menus) {
+  const list = $('dynamic-menu');
+  if (!list) return;
+  list.innerHTML = '';
 
-function navigateToFeature(target) {
-  closeMenu();
-  if (!target) return;
-  const element = document.querySelector(target);
-  if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function renderMenu() {
-  const container = $('#dynamicMenuList');
-  if (!container) return;
-  container.innerHTML = '';
-
-  if (!menuItems.length) {
-    const empty = document.createElement('div');
-    empty.className = 'menu-empty';
-    empty.textContent = 'Chưa có mục tùy chỉnh.';
-    container.appendChild(empty);
+  if (!menus.length) {
+    list.innerHTML = '<div class="menu-empty">Chưa có mục menu động.</div>';
     return;
   }
 
-  menuItems.forEach((item) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'menu-item';
-    button.innerHTML = `<span class="menu-item-icon">${item.type === 'iframe' ? '▣' : '↗'}</span><span>${escapeHtml(item.title)}</span>`;
-    button.addEventListener('click', () => {
-      if (item.type === 'iframe') openIframe(item.title, item.url);
-      else window.open(item.url, '_blank', 'noopener,noreferrer');
-      closeMenu();
+  menus.forEach((item) => {
+    const row = document.createElement('button');
+    row.className = 'drawer-link';
+    row.type = 'button';
+    row.innerHTML = `<span class="drawer-link-icon">${item.type === 'iframe' ? '▣' : '↗'}</span><span>${escapeText(item.title)}</span>`;
+    row.addEventListener('click', () => {
+      closeDrawer();
+      if (item.type === 'iframe') {
+        openIframe(item.url, item.title);
+      } else {
+        window.open(item.url, '_blank', 'noopener,noreferrer');
+      }
     });
-    container.appendChild(button);
+    list.appendChild(row);
   });
-}
-
-function escapeHtml(value) {
-  const div = document.createElement('div');
-  div.textContent = value ?? '';
-  return div.innerHTML;
-}
-
-async function fetchMenu() {
-  try {
-    const response = await fetch(backendUrl('/api/menu'), { cache: 'no-store' });
-    if (!response.ok) throw new Error('menu request failed');
-    const payload = await response.json();
-    menuItems = Array.isArray(payload.menus) ? payload.menus : [];
-    renderMenu();
-  } catch {
-    menuItems = [];
-    renderMenu();
-  }
 }
 
 function connectMenuStream() {
-  if (!window.EventSource) return;
+  if (!CONFIG.MENU_STREAM_ENABLED || !('EventSource' in window)) return;
   const source = new EventSource(backendUrl('/api/menu/stream'));
-  source.addEventListener('menus', (event) => {
+  source.addEventListener('menu', (event) => {
     try {
-      const payload = JSON.parse(event.data);
-      menuItems = Array.isArray(payload.menus) ? payload.menus : [];
-      renderMenu();
-    } catch {}
+      currentMenus = getMenus(JSON.parse(event.data));
+      renderMenu(currentMenus);
+    } catch (_) {}
   });
-  source.onerror = () => source.close();
-}
-
-function initSidebar() {
-  $('#menuToggle')?.addEventListener('click', openMenu);
-  $('#menuClose')?.addEventListener('click', closeMenu);
-  $('#menuBackdrop')?.addEventListener('click', closeMenu);
-  $$('.default-menu-link').forEach((button) => {
-    button.addEventListener('click', () => navigateToFeature(button.dataset.target));
-  });
-}
-
-function openIframe(title, url) {
-  const modal = $('#iframeModal');
-  const frame = $('#iframeView');
-  const titleEl = $('#iframeTitle');
-  if (!modal || !frame) return;
-  frame.src = url;
-  frame.title = title || 'TDM Dev Web View';
-  if (titleEl) titleEl.textContent = title || 'Web View';
-  modal.classList.add('is-visible');
-  document.body.classList.add('modal-open');
-}
-
-function closeIframe() {
-  const modal = $('#iframeModal');
-  const frame = $('#iframeView');
-  modal?.classList.remove('is-visible');
-  document.body.classList.remove('modal-open');
-  if (frame) frame.src = 'about:blank';
-}
-
-function initIframeModal() {
-  $('#iframeClose')?.addEventListener('click', closeIframe);
-  $('#iframeBackdrop')?.addEventListener('click', closeIframe);
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeMenu();
-      closeIframe();
-    }
-  });
-}
-
-function updateAuthUI(user) {
-  const authState = $('#authState');
-  const authTrigger = $('#authTrigger');
-  const authUserName = $('#authUserName');
-  if (!authState || !authTrigger) return;
-
-  if (user) {
-    authState.hidden = false;
-    authTrigger.hidden = true;
-    if (authUserName) authUserName.textContent = TDMAuth.friendlyUser(user)?.displayName || 'TDM User';
-  } else {
-    authState.hidden = true;
-    authTrigger.hidden = false;
-  }
-}
-
-function initAuthModal() {
-  const modal = $('#authModal');
-  if (!modal) return;
-
-  const modeTitle = $('#authModeTitle');
-  const nameField = $('#authNameField');
-  const nameInput = $('#authName');
-  const emailInput = $('#authEmail');
-  const passwordInput = $('#authPassword');
-  const form = $('#authForm');
-  const submit = $('#authSubmit');
-  const switchMode = $('#authSwitch');
-  const google = $('#googleSignIn');
-  const close = () => {
-    modal.classList.remove('is-visible');
-    document.body.classList.remove('modal-open');
+  source.onerror = () => {
+    // EventSource tự reconnect; không bật toast để tránh làm phiền người dùng.
   };
+}
 
-  let mode = 'login';
-  $('#authTrigger')?.addEventListener('click', () => {
-    modal.classList.add('is-visible');
-    document.body.classList.add('modal-open');
-  });
-  $('#authClose')?.addEventListener('click', close);
-  $('#authBackdrop')?.addEventListener('click', close);
-  $('#authLogout')?.addEventListener('click', async () => {
-    await TDMAuth.signOut();
-    showToast('Đã đăng xuất.', 'success');
-  });
+function openDrawer() {
+  $('app-drawer')?.classList.add('open');
+  $('drawer-backdrop')?.classList.add('open');
+  document.body.classList.add('drawer-lock');
+}
 
-  function renderMode() {
-    const register = mode === 'register';
-    if (modeTitle) modeTitle.textContent = register ? 'Tạo tài khoản' : 'Đăng nhập';
-    if (nameField) nameField.hidden = !register;
-    if (submit) submit.textContent = register ? 'Đăng ký' : 'Đăng nhập';
-    if (switchMode) switchMode.textContent = register ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký';
-    if (!register && nameInput) nameInput.value = '';
+function closeDrawer() {
+  $('app-drawer')?.classList.remove('open');
+  $('drawer-backdrop')?.classList.remove('open');
+  document.body.classList.remove('drawer-lock');
+}
+
+function openIframe(url, title) {
+  if (!/^https?:\/\//i.test(url)) return showToast('URL không hợp lệ.', 'error');
+  $('iframe-title').textContent = title || 'Xem nội dung';
+  $('iframe-loader').hidden = false;
+  $('iframe-target').src = url;
+  openModal('iframe-modal');
+  $('iframe-target').onload = () => { $('iframe-loader').hidden = true; };
+}
+
+function openModal(id) {
+  const modal = $(id);
+  if (!modal) return;
+  modal.hidden = false;
+  requestAnimationFrame(() => modal.classList.add('open'));
+  document.body.classList.add('modal-lock');
+}
+
+function closeModal(id) {
+  const modal = $(id);
+  if (!modal) return;
+  modal.classList.remove('open');
+  setTimeout(() => { modal.hidden = true; }, 180);
+  if (![...document.querySelectorAll('.modal.open')].some((item) => item.id !== id)) {
+    document.body.classList.remove('modal-lock');
+  }
+  if (id === 'iframe-modal') $('iframe-target').src = 'about:blank';
+}
+
+function showToast(message, type = 'info') {
+  const host = $('toast-host');
+  if (!host) return;
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<span class="toast-dot"></span><span>${escapeText(message)}</span>`;
+  host.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 220);
+  }, 3200);
+}
+
+function confirmDialog(message, title = 'Xác nhận') {
+  return new Promise((resolve) => {
+    const modal = $('confirm-modal');
+    $('confirm-title').textContent = title;
+    $('confirm-message').textContent = message;
+    modal.hidden = false;
+    requestAnimationFrame(() => modal.classList.add('open'));
+    const cleanup = (result) => {
+      modal.classList.remove('open');
+      setTimeout(() => { modal.hidden = true; }, 180);
+      $('confirm-ok').onclick = null;
+      $('confirm-cancel').onclick = null;
+      resolve(result);
+    };
+    $('confirm-ok').onclick = () => cleanup(true);
+    $('confirm-cancel').onclick = () => cleanup(false);
+  });
+}
+
+function hideLoader() {
+  const loader = $('app-loader');
+  if (!loader) return;
+  loader.classList.add('fade-out');
+  setTimeout(() => {
+    loader.hidden = true;
+    document.body.classList.remove('loading-lock');
+  }, 520);
+}
+
+function setupLoaderFallback() {
+  window.__tdmLoaderSafety = setTimeout(() => {
+    if (!$('app-loader')?.hidden) {
+      hideLoader();
+      showToast('Trang đã mở. Một số dữ liệu có thể đang chờ kết nối backend.', 'warning');
+    }
+  }, 15000);
+}
+
+function bindUi() {
+  $('hamburger')?.addEventListener('click', openDrawer);
+  $('drawer-close')?.addEventListener('click', closeDrawer);
+  $('drawer-backdrop')?.addEventListener('click', closeDrawer);
+  $('theme-toggle')?.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('tdmdev_theme', next);
+    $('theme-toggle-label').textContent = next === 'light' ? 'Chế độ tối' : 'Chế độ sáng';
+  });
+  document.querySelectorAll('[data-close-modal]').forEach((button) => {
+    button.addEventListener('click', () => closeModal(button.dataset.closeModal));
+  });
+  document.querySelectorAll('.modal').forEach((modal) => {
+    modal.addEventListener('mousedown', (event) => {
+      if (event.target === modal) closeModal(modal.id);
+    });
+  });
+  $('iframe-target')?.addEventListener('load', () => { $('iframe-loader').hidden = true; });
+}
+
+async function init() {
+  document.body.classList.add('loading-lock');
+  const savedTheme = localStorage.getItem('tdmdev_theme') || 'dark';
+  document.documentElement.dataset.theme = savedTheme;
+  $('theme-toggle-label').textContent = savedTheme === 'light' ? 'Chế độ tối' : 'Chế độ sáng';
+  bindUi();
+  setupLoaderFallback();
+
+  const results = await Promise.allSettled([
+    loadMenu(),
+    initTempMail(),
+    Promise.resolve(initLink4M())
+  ]);
+
+  if (results[0].status === 'rejected') {
+    renderMenu([]);
+    showToast('Không tải được menu động từ backend.', 'warning');
   }
 
-  switchMode?.addEventListener('click', () => {
-    mode = mode === 'login' ? 'register' : 'login';
-    renderMode();
-  });
-
-  form?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    submit.disabled = true;
-    try {
-      if (mode === 'register') {
-        await TDMAuth.createWithEmailPassword({ name: nameInput.value, email: emailInput.value, password: passwordInput.value });
-        showToast('Tạo tài khoản thành công.', 'success');
-      } else {
-        await TDMAuth.signInWithEmailPassword({ email: emailInput.value, password: passwordInput.value });
-        showToast('Đăng nhập thành công.', 'success');
-      }
-      form.reset();
-      close();
-    } catch (error) {
-      showToast(TDMAuth.translateAuthError(error.code), 'error');
-    } finally {
-      submit.disabled = false;
-    }
-  });
-
-  google?.addEventListener('click', async () => {
-    google.disabled = true;
-    try {
-      await TDMAuth.signInWithGoogle();
-      showToast('Đăng nhập Google thành công.', 'success');
-      close();
-    } catch (error) {
-      showToast(TDMAuth.translateAuthError(error.code), 'error');
-    } finally {
-      google.disabled = false;
-    }
-  });
-
-  TDMAuth.onAuthStateChanged((user) => updateAuthUI(user));
-  renderMode();
-}
-
-async function bootstrap() {
-  initTheme();
-  initSidebar();
-  initIframeModal();
-  initAuthModal();
-  await fetchMenu();
   connectMenuStream();
-  initTempMail({ showToast, backendUrl, CONFIG });
-  initLink4M({ showToast, backendUrl });
+  clearTimeout(window.__tdmLoaderSafety);
+  hideLoader();
 }
 
-bootstrap();
+window.showToast = showToast;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.confirmDialog = confirmDialog;
+
+window.addEventListener('DOMContentLoaded', init, { once: true });

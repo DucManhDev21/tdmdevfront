@@ -1,8 +1,8 @@
-export const CONFIG = Object.freeze({
-  BACKEND_URL: 'https://tdmdevback-production.up.railway.app'
+// Chỉ thay URL này sau khi deploy backend lên Railway.
+const CONFIG = Object.freeze({
+  BACKEND_URL: 'https://your-railway-app.up.railway.app',
+  TEMPMAIL_REFRESH_SECONDS: 7,
+  MENU_STREAM_ENABLED: true
 });
 
-export function backendUrl(path = '') {
-  const base = CONFIG.BACKEND_URL.replace(/\/$/, '');
-  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
-}
+export default CONFIG;

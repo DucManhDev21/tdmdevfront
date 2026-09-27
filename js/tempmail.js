@@ -1,306 +1,340 @@
-const SESSION_KEY = 'tdm-temp-session';
-const MAILBOX_KEY = 'tdm-temp-mailbox';
-let countdown = 10;
-let timer = null;
-let currentMessages = [];
+import CONFIG from './config.js';
 
-const $ = (selector, scope = document) => scope.querySelector(selector);
+const state = {
+  email: '',
+  mailboxId: '',
+  domains: [],
+  messages: [],
+  refreshTimer: null,
+  countdownTimer: null,
+  secondsLeft: CONFIG.TEMPMAIL_REFRESH_SECONDS,
+  busy: false
+};
 
-function escapeHtml(value) {
-  const div = document.createElement('div');
-  div.textContent = value ?? '';
-  return div.innerHTML;
+const $ = (id) => document.getElementById(id);
+
+function apiUrl(path) {
+  return `${CONFIG.BACKEND_URL.replace(/\/$/, '')}${path}`;
 }
 
-function normalizeArray(payload) {
-  const candidates = [payload, payload?.data, payload?.emails, payload?.messages, payload?.items, payload?.results, payload?.data?.emails, payload?.data?.messages, payload?.data?.items];
-  return candidates.find(Array.isArray) || [];
-}
-
-function normalizeMailbox(value) {
-  const root = value?.data || value || {};
-  return {
-    id: root.id ?? root.mail_id ?? root.mailId ?? root.email_id ?? '',
-    email: root.email ?? root.address ?? root.mail ?? root.username ?? ''
-  };
-}
-
-function normalizeMessage(message) {
-  return {
-    id: message?.id ?? message?.message_id ?? message?.messageId ?? message?.uuid ?? '',
-    sender: message?.from ?? message?.sender ?? message?.from_email ?? message?.email ?? 'Không rõ',
-    subject: message?.subject ?? message?.title ?? '(Không có tiêu đề)',
-    date: message?.date ?? message?.created_at ?? message?.createdAt ?? message?.time ?? '',
-    preview: message?.preview ?? message?.snippet ?? message?.text ?? message?.body ?? '',
-    raw: message
-  };
-}
-
-function extractMessageContent(payload) {
-  const root = payload?.data || payload || {};
-  const html = root.html ?? root.html_content ?? root.body_html ?? root.content_html ?? root.body ?? '';
-  const text = root.text ?? root.text_content ?? root.body_text ?? root.plain ?? '';
-  const from = root.from ?? root.sender ?? root.from_email ?? '';
-  const subject = root.subject ?? root.title ?? '(Không có tiêu đề)';
-  const date = root.date ?? root.created_at ?? root.createdAt ?? root.time ?? '';
-  const attachmentList = root.attachments ?? root.files ?? root.file_attachments ?? [];
-  return { html: String(html || ''), text: String(text || ''), from: String(from || ''), subject: String(subject || ''), date: String(date || ''), attachments: Array.isArray(attachmentList) ? attachmentList : [] };
-}
-
-function sanitizeEmailHtml(html) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html || '', 'text/html');
-  doc.querySelectorAll('script, iframe, object, embed, form, meta[http-equiv="refresh"]').forEach((node) => node.remove());
-  doc.querySelectorAll('*').forEach((node) => {
-    [...node.attributes].forEach((attribute) => {
-      if (/^on/i.test(attribute.name)) node.removeAttribute(attribute.name);
-      if (attribute.name.toLowerCase() === 'srcdoc') node.removeAttribute(attribute.name);
+async function request(path, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(apiUrl(path), {
+      ...options,
+      signal: controller.signal,
+      headers: { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) }
     });
-  });
-  return doc.body.innerHTML;
-}
-
-function attachmentUrl(attachment) {
-  const url = attachment?.url ?? attachment?.download_url ?? attachment?.downloadUrl ?? attachment?.href ?? '';
-  if (url) return String(url);
-  const content = attachment?.content ?? attachment?.data ?? '';
-  const mime = attachment?.mime ?? attachment?.mime_type ?? attachment?.contentType ?? 'application/octet-stream';
-  if (!content) return '';
-  if (String(content).startsWith('data:')) return String(content);
-  return `data:${mime};base64,${String(content).replace(/^base64,/, '')}`;
-}
-
-function renderMailbox(mailbox) {
-  const emailBox = $('#tempEmailAddress');
-  if (emailBox) emailBox.textContent = mailbox?.email || 'Chưa có email';
-  const status = $('#mailStatus');
-  if (status) status.textContent = mailbox?.email ? 'Hộp thư đang hoạt động' : 'Đang tạo hộp thư...';
-}
-
-function renderMessages(messages) {
-  const container = $('#messageList');
-  const count = $('#messageCount');
-  if (!container) return;
-  currentMessages = messages.map(normalizeMessage).filter((item) => item.id);
-  if (count) count.textContent = String(currentMessages.length);
-
-  if (!currentMessages.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">✉</div><h3>Chưa có thư mới</h3><p>Hệ thống sẽ tự động kiểm tra hộp thư.</p></div>';
-    return;
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+    }
+    return payload;
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  container.innerHTML = currentMessages.map((message, index) => `
-    <button class="message-row" type="button" data-message-index="${index}">
-      <div class="message-avatar">${escapeHtml((message.sender || '?').slice(0, 1).toUpperCase())}</div>
-      <div class="message-main">
-        <div class="message-top"><strong>${escapeHtml(message.sender)}</strong><time>${escapeHtml(formatDate(message.date))}</time></div>
-        <div class="message-subject">${escapeHtml(message.subject)}</div>
-        <div class="message-preview">${escapeHtml(String(message.preview).replace(/<[^>]+>/g, '').slice(0, 120))}</div>
-      </div>
-    </button>
-  `).join('');
+function unwrap(value) {
+  if (value && typeof value === 'object' && value.data !== undefined) return value.data;
+  return value;
+}
 
-  container.querySelectorAll('.message-row').forEach((button) => {
-    button.addEventListener('click', () => openMessage(currentMessages[Number(button.dataset.messageIndex)]));
-  });
+function deepFind(value, keys, maxDepth = 5, depth = 0) {
+  if (depth > maxDepth || value === null || value === undefined) return '';
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = deepFind(item, keys, maxDepth, depth + 1);
+      if (found) return found;
+    }
+    return '';
+  }
+  if (typeof value !== 'object') return '';
+  for (const key of keys) {
+    if (value[key] !== undefined && value[key] !== null && String(value[key]).trim()) return value[key];
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (keys.includes(key)) continue;
+    const found = deepFind(child, keys, maxDepth, depth + 1);
+    if (found) return found;
+  }
+  return '';
+}
+
+function findArray(value, preferredKeys = [], depth = 0) {
+  if (depth > 5 || value === null || value === undefined) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'object') return [];
+  for (const key of preferredKeys) {
+    if (Array.isArray(value[key])) return value[key];
+  }
+  for (const child of Object.values(value)) {
+    const result = findArray(child, preferredKeys, depth + 1);
+    if (result.length) return result;
+  }
+  return [];
+}
+
+function escapeText(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+}
+
+function normalizeDomainList(payload) {
+  const data = unwrap(payload);
+  const array = findArray(data, ['domains', 'items', 'results', 'data']);
+  const direct = array.length ? array : (Array.isArray(data) ? data : []);
+  return direct.map((item) => {
+    if (typeof item === 'string') return item;
+    return deepFind(item, ['domain', 'name', 'value']) || '';
+  }).filter(Boolean);
+}
+
+function normalizeMessages(payload) {
+  const data = unwrap(payload);
+  const array = findArray(data, ['messages', 'items', 'results', 'emails', 'data']);
+  const direct = array.length ? array : (Array.isArray(data) ? data : []);
+  return direct.map((item) => ({
+    id: String(deepFind(item, ['id', 'message_id', 'messageId']) || ''),
+    from: String(deepFind(item, ['from', 'sender', 'from_email', 'email']) || 'Không rõ người gửi'),
+    subject: String(deepFind(item, ['subject', 'title']) || '(Không có tiêu đề)'),
+    date: String(deepFind(item, ['date', 'created_at', 'createdAt', 'timestamp', 'time']) || ''),
+    preview: String(deepFind(item, ['preview', 'snippet', 'text', 'body']) || '')
+  })).filter((item) => item.id || item.subject);
+}
+
+function setStatus(text, tone = '') {
+  const target = $('temp-status');
+  if (!target) return;
+  target.textContent = text;
+  target.dataset.tone = tone;
+}
+
+function setEmail(value) {
+  state.email = value || '';
+  const input = $('temp-email');
+  const compact = $('temp-email-mobile');
+  if (input) input.value = state.email;
+  if (compact) compact.textContent = state.email || 'Chưa tạo email';
+  const hero = document.getElementById('hero-mail-status');
+  if (hero) hero.textContent = state.email && !state.email.startsWith('Chưa') ? 'Đã kết nối' : 'Chờ kết nối';
+}
+
+function syncCountdown() {
+  state.secondsLeft = CONFIG.TEMPMAIL_REFRESH_SECONDS;
+  $('temp-countdown').textContent = `${state.secondsLeft}s`;
+}
+
+function startCountdown() {
+  clearInterval(state.countdownTimer);
+  syncCountdown();
+  state.countdownTimer = setInterval(() => {
+    state.secondsLeft -= 1;
+    $('temp-countdown').textContent = `${Math.max(0, state.secondsLeft)}s`;
+    if (state.secondsLeft <= 0) syncCountdown();
+  }, 1000);
+}
+
+function renderMessages() {
+  const list = $('message-list');
+  const empty = $('message-empty');
+  const count = $('message-count');
+  if (!list || !empty) return;
+  list.innerHTML = '';
+  count.textContent = String(state.messages.length);
+  empty.hidden = state.messages.length > 0;
+
+  for (const message of state.messages) {
+    const button = document.createElement('button');
+    button.className = 'message-row';
+    button.type = 'button';
+    button.dataset.messageId = message.id;
+    button.innerHTML = `
+      <span class="message-avatar">✉</span>
+      <span class="message-main">
+        <strong>${escapeText(message.subject)}</strong>
+        <small>${escapeText(message.from)}</small>
+      </span>
+      <span class="message-meta">${escapeText(formatDate(message.date))}</span>
+    `;
+    button.addEventListener('click', () => openMessage(message.id));
+    list.appendChild(button);
+  }
 }
 
 function formatDate(value) {
   if (!value) return '';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 30);
+  return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(date);
 }
 
-async function apiFetch(path, options = {}) {
-  const headers = new Headers(options.headers || {});
-  const session = localStorage.getItem(SESSION_KEY);
-  if (session) headers.set('X-Temp-Session', session);
-  const response = await fetch(path, { ...options, headers });
-  let payload = null;
-  try { payload = await response.json(); } catch {}
-  if (response.headers.get('X-Temp-Session')) localStorage.setItem(SESSION_KEY, response.headers.get('X-Temp-Session'));
-  if (!response.ok) {
-    const error = new Error(payload?.message || 'Backend request failed.');
-    error.payload = payload;
-    error.status = response.status;
+async function loadDomains() {
+  try {
+    const result = await request('/api/tempmail/domains');
+    const domains = normalizeDomainList(result.data);
+    state.domains = domains;
+    const select = $('temp-domain');
+    if (select && domains.length) {
+      select.innerHTML = domains.map((domain) => `<option value="${escapeText(domain)}">@${escapeText(domain)}</option>`).join('');
+    }
+    return domains;
+  } catch (error) {
+    setStatus(`Domain API chưa sẵn sàng: ${error.message}`, 'warning');
+    return [];
+  }
+}
+
+async function createMailbox({ silent = false } = {}) {
+  if (state.busy) return;
+  state.busy = true;
+  if (!silent) setStatus('Đang tạo email mới…');
+  try {
+    const prefix = $('temp-prefix')?.value.trim() || '';
+    const domain = $('temp-domain')?.value || '';
+    const result = await request('/api/tempmail/create', {
+      method: 'POST',
+      body: JSON.stringify({ prefix, domain })
+    });
+    const data = unwrap(result.data);
+    const email = String(deepFind(data, ['email', 'address', 'mail']) || deepFind(result, ['email', 'address', 'mail']) || '');
+    const mailboxId = String(deepFind(data, ['id', 'mail_id', 'mailId', 'email_id', 'emailId']) || '');
+    if (!email) throw new Error('TempMail không trả về địa chỉ email.');
+    state.mailboxId = mailboxId;
+    setEmail(email);
+    state.messages = [];
+    renderMessages();
+    setStatus('Email tạm thời đang hoạt động', 'success');
+    const hero = document.getElementById('hero-mail-status');
+    if (hero) hero.textContent = 'Đã kết nối';
+    syncCountdown();
+    await refreshInbox({ silent: true });
+    return email;
+  } catch (error) {
+    setStatus(error.message, 'error');
+    if (!silent) window.showToast?.(error.message, 'error');
     throw error;
+  } finally {
+    state.busy = false;
   }
-  return payload;
 }
 
-async function createMailbox(prefix = '') {
-  const body = {};
-  if (prefix.trim()) body.user = prefix.trim();
-  const payload = await apiFetch('/api/temp-mail/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  const mailbox = normalizeMailbox(payload.mailbox || payload.data);
-  if (!mailbox.id || !mailbox.email) throw new Error('Không nhận được mailbox hợp lệ.');
-  localStorage.setItem(MAILBOX_KEY, JSON.stringify(mailbox));
-  renderMailbox(mailbox);
-  await refreshMessages(false);
-  return mailbox;
-}
-
-async function refreshMessages(showError = true) {
+async function refreshInbox({ silent = false } = {}) {
+  if (!state.email && !state.mailboxId) return;
   try {
-    const payload = await apiFetch('/api/temp-mail/messages');
-    const messages = normalizeArray(payload?.data ?? payload);
-    renderMessages(messages);
-    $('#mailStatus')?.setAttribute('data-ok', 'true');
+    const query = state.email ? `?email=${encodeURIComponent(state.email)}` : `?id=${encodeURIComponent(state.mailboxId)}`;
+    const result = await request(`/api/tempmail/inbox${query}`);
+    state.messages = normalizeMessages(result.data);
+    renderMessages();
+    if (!silent) setStatus(`Đã làm mới hộp thư • ${state.messages.length} thư`, 'success');
+    syncCountdown();
   } catch (error) {
-    $('#mailStatus')?.setAttribute('data-ok', 'false');
-    if (showError) initContext()?.showToast?.(error.message, 'error');
+    if (!silent) {
+      setStatus(`Làm mới thất bại: ${error.message}`, 'warning');
+      window.showToast?.(error.message, 'error');
+    }
   }
-  countdown = 10;
-  renderCountdown();
 }
 
-function renderCountdown() {
-  const counter = $('#refreshCountdown');
-  if (counter) counter.textContent = `${countdown}s`;
-}
-
-let context = null;
-function initContext() { return context; }
-
-async function openMessage(message) {
-  const modal = $('#emailModal');
-  if (!modal) return;
-  const title = $('#emailModalTitle');
-  const meta = $('#emailMeta');
-  const content = $('#emailContent');
-  const attachments = $('#emailAttachments');
-  if (title) title.textContent = message.subject || 'Nội dung thư';
-  if (meta) meta.textContent = `${message.sender || 'Không rõ'} • ${formatDate(message.date)}`;
-  if (content) content.innerHTML = '<div class="loading-state">Đang tải nội dung thư…</div>';
-  if (attachments) attachments.innerHTML = '';
-  modal.classList.add('is-visible');
-  document.body.classList.add('modal-open');
-
+async function openMessage(id) {
+  if (!id) return;
   try {
-    const payload = await apiFetch(`/api/temp-mail/message/${encodeURIComponent(message.id)}`);
-    const data = extractMessageContent(payload);
-    if (meta) meta.textContent = `${data.from || message.sender || 'Không rõ'} • ${formatDate(data.date || message.date)}`;
-    const safeHtml = sanitizeEmailHtml(data.html);
-    if (content) {
-      if (safeHtml) {
-        const frame = document.createElement('iframe');
-        frame.className = 'email-frame';
-        frame.setAttribute('sandbox', '');
-        frame.setAttribute('referrerpolicy', 'no-referrer');
-        frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data: cid:; style-src 'unsafe-inline'; font-src https: data:;"> </head><body style="margin:0;padding:18px;font-family:Arial,sans-serif;color:#182033;line-height:1.6">${safeHtml}</body></html>`;
-        content.replaceChildren(frame);
-      } else {
-        content.innerHTML = `<pre class="email-text">${escapeHtml(data.text || 'Thư không có nội dung văn bản.')}</pre>`;
-      }
+    const result = await request(`/api/tempmail/message/${encodeURIComponent(id)}`);
+    const data = unwrap(result.data) || result.data;
+    const sender = String(deepFind(data, ['from', 'sender', 'from_email']) || 'Không rõ');
+    const subject = String(deepFind(data, ['subject', 'title']) || '(Không có tiêu đề)');
+    const date = String(deepFind(data, ['date', 'created_at', 'createdAt', 'timestamp']) || '');
+    const html = String(deepFind(data, ['html', 'body_html', 'html_body', 'content_html']) || '');
+    const text = String(deepFind(data, ['text', 'body_text', 'content', 'body']) || '');
+    const attachments = findArray(data, ['attachments', 'files']);
+
+    const modalBody = $('message-modal-body');
+    const modalTitle = $('message-modal-title');
+    if (modalTitle) modalTitle.textContent = subject;
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <div class="mail-details">
+          <div><span>Người gửi</span><strong>${escapeText(sender)}</strong></div>
+          <div><span>Thời gian</span><strong>${escapeText(formatDate(date))}</strong></div>
+        </div>
+        <div class="mail-content-box">
+          ${html ? `<iframe class="mail-html-frame" sandbox="allow-same-origin" referrerpolicy="no-referrer" title="Email HTML"></iframe>` : `<pre>${escapeText(text || 'Email không có nội dung văn bản.')}</pre>`}
+        </div>
+        ${attachments.length ? `<div class="attachments"><h4>File đính kèm</h4>${attachments.map((file) => {
+          const url = deepFind(file, ['url', 'download_url', 'downloadUrl']) || '#';
+          const name = deepFind(file, ['name', 'filename', 'file_name']) || 'Tệp';
+          return isSafeHttpUrl(url) ? `<a href="${escapeText(url)}" target="_blank" rel="noopener">${escapeText(name)}</a>` : `<span>${escapeText(name)}</span>`;
+        }).join('')}</div>` : ''}
+      `;
+      const frame = modalBody.querySelector('.mail-html-frame');
+      if (frame && html) frame.srcdoc = `<base target="_blank"><style>body{font-family:system-ui,sans-serif;padding:20px;line-height:1.6;word-break:break-word}img{max-width:100%;height:auto}</style>${html}`;
     }
-    renderAttachments(data.attachments);
+    window.openModal?.('message-modal');
   } catch (error) {
-    if (content) content.innerHTML = `<div class="error-state">${escapeHtml(error.message)}</div>`;
+    window.showToast?.(error.message, 'error');
   }
 }
 
-function renderAttachments(items) {
-  const container = $('#emailAttachments');
-  if (!container) return;
-  container.innerHTML = '';
-  items.forEach((item) => {
-    const url = attachmentUrl(item);
-    const name = item?.name ?? item?.filename ?? 'Tệp đính kèm';
-    const row = document.createElement('div');
-    row.className = 'attachment-row';
-    const title = document.createElement('span');
-    title.textContent = name;
-    row.appendChild(title);
-    if (url) {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = name;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = 'Tải xuống';
-      row.appendChild(link);
-    }
-    container.appendChild(row);
-  });
+function isSafeHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch (_) { return false; }
 }
 
-function closeMessage() {
-  $('#emailModal')?.classList.remove('is-visible');
-  document.body.classList.remove('modal-open');
-}
-
-export function initTempMail(runtime) {
-  context = runtime;
-  const stored = localStorage.getItem(MAILBOX_KEY);
-  if (stored) {
-    try { renderMailbox(JSON.parse(stored)); } catch {}
+async function deleteMailbox() {
+  if (!state.email && !state.mailboxId) return;
+  const approved = await window.confirmDialog?.('Xóa hộp thư hiện tại? Các thư của hộp này có thể không khôi phục được.', 'Xóa hộp thư');
+  if (!approved) return;
+  try {
+    await request('/api/tempmail/delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids: state.mailboxId ? [state.mailboxId] : [], emailIds: state.mailboxId ? [state.mailboxId] : [], emails: state.email ? [state.email] : [] })
+    });
+    setEmail('');
+    state.mailboxId = '';
+    state.messages = [];
+    renderMessages();
+    setStatus('Đã xóa hộp thư', 'success');
+    await createMailbox({ silent: true });
+  } catch (error) {
+    window.showToast?.(error.message, 'error');
   }
+}
 
-  $('#copyEmail')?.addEventListener('click', async () => {
-    const email = $('#tempEmailAddress')?.textContent?.trim();
-    if (!email || email === 'Chưa có email') return runtime.showToast('Chưa có email để sao chép.', 'error');
-    try {
-      await navigator.clipboard.writeText(email);
-      runtime.showToast('Đã sao chép email.', 'success');
-    } catch {
-      runtime.showToast('Không thể sao chép tự động.', 'error');
-    }
+function bindEvents() {
+  $('copy-email')?.addEventListener('click', async () => {
+    if (!state.email) return window.showToast?.('Chưa có email để sao chép.', 'warning');
+    await navigator.clipboard.writeText(state.email).catch(() => {});
+    window.showToast?.('Đã sao chép email.', 'success');
   });
-
-  $('#newEmail')?.addEventListener('click', async () => {
-    const prefix = $('#emailPrefix')?.value || '';
-    const button = $('#newEmail');
-    button.disabled = true;
-    try {
-      await createMailbox(prefix);
-      runtime.showToast('Đã tạo email mới.', 'success');
-    } catch (error) {
-      runtime.showToast(error.message, 'error');
-    } finally {
-      button.disabled = false;
-    }
+  $('create-email')?.addEventListener('click', () => createMailbox());
+  $('refresh-mail')?.addEventListener('click', () => refreshInbox());
+  $('delete-mailbox')?.addEventListener('click', deleteMailbox);
+  $('random-prefix')?.addEventListener('click', () => {
+    $('temp-prefix').value = `tdm${Math.random().toString(36).slice(2, 10)}`;
   });
+}
 
-  $('#refreshMail')?.addEventListener('click', () => refreshMessages(true));
-
-  $('#deleteEmail')?.addEventListener('click', async () => {
-    try {
-      await apiFetch('/api/temp-mail/current', { method: 'DELETE' });
-      localStorage.removeItem(MAILBOX_KEY);
-      renderMailbox(null);
-      renderMessages([]);
-      runtime.showToast('Đã xóa hộp thư hiện tại.', 'success');
-    } catch (error) {
-      if (error.status === 501 || error.payload?.unsupported) {
-        localStorage.removeItem(MAILBOX_KEY);
-        renderMailbox(null);
-        renderMessages([]);
-        runtime.showToast('API chưa hỗ trợ xóa trực tiếp; hộp thư đã được xóa khỏi phiên của bạn.', 'info');
-      } else {
-        runtime.showToast(error.message, 'error');
-      }
-    }
-  });
-
-  $('#emailClose')?.addEventListener('click', closeMessage);
-  $('#emailBackdrop')?.addEventListener('click', closeMessage);
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeMessage(); });
-
-  createMailbox().catch(() => refreshMessages(false));
-
-  renderCountdown();
-  timer = window.setInterval(() => {
-    countdown -= 1;
-    if (countdown <= 0) {
-      countdown = 10;
-      if (!document.hidden) refreshMessages(false);
-      else renderCountdown();
-    }
-    else renderCountdown();
-  }, 1000);
+export async function initTempMail() {
+  bindEvents();
+  startCountdown();
+  const domainPromise = loadDomains();
+  let createResult;
+  try {
+    createResult = await createMailbox({ silent: true });
+  } catch (error) {
+    createResult = null;
+  }
+  await domainPromise;
+  if (!createResult && !state.email) {
+    setEmail('Chưa kết nối được TempMail');
+    const hero = document.getElementById('hero-mail-status');
+    if (hero) hero.textContent = 'Chưa kết nối';
+    state.messages = [];
+    renderMessages();
+  }
+  clearInterval(state.refreshTimer);
+  state.refreshTimer = setInterval(() => refreshInbox({ silent: true }), CONFIG.TEMPMAIL_REFRESH_SECONDS * 1000);
+  return { email: state.email };
 }
