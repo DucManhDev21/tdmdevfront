@@ -1,6 +1,6 @@
 // TDM Dev frontend runtime configuration.
 // Replace BACKEND_URL with the public Railway URL of your backend.
-export const BACKEND_URL = 'https://tdmdev-backend.up.railway.app';
+export const BACKEND_URL = 'https://tdmdevback-production-17d4.up.railway.app';
 
 export const API_TIMEOUT_MS = 30000;
 
