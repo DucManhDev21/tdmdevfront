@@ -1,145 +1,139 @@
-import CONFIG from './config.js';
+import { apiFetch } from './config.js';
 
-const KEY = 'tdmdev_link4m_api_key';
-const HISTORY_KEY = 'tdmdev_link4m_history';
+const STORAGE_KEY = 'link4m_api_key';
+let initialized = false;
 
-const $ = (id) => document.getElementById(id);
-
-function backendUrl(path) {
-  return `${CONFIG.BACKEND_URL.replace(/\/$/, '')}${path}`;
+function getElements() {
+  return {
+    form: document.querySelector('#link4m-form'),
+    apiKey: document.querySelector('#link4m-api-key'),
+    targetUrl: document.querySelector('#link4m-target-url'),
+    submit: document.querySelector('#link4m-submit'),
+    result: document.querySelector('#link4m-result'),
+    shortUrl: document.querySelector('#link4m-short-url'),
+    copy: document.querySelector('#link4m-copy'),
+    qr: document.querySelector('#link4m-qr'),
+    status: document.querySelector('#link4m-status'),
+  };
 }
 
-function loadKey() {
-  const saved = localStorage.getItem(KEY) || '';
-  $('link4m-api-key').value = saved;
-  updateKeyState(Boolean(saved));
+function setStatus(message = '', type = 'info') {
+  const { status } = getElements();
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.type = type;
+  status.hidden = !message;
 }
 
-function updateKeyState(hasKey) {
-  $('key-saved-label').textContent = hasKey ? 'Đã lưu trên thiết bị' : 'Chưa lưu';
-}
-
-function saveKey(value) {
-  localStorage.setItem(KEY, value);
-  updateKeyState(true);
-}
-
-function getHistory() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (_) { return []; }
-}
-
-function setHistory(items) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, 10)));
-}
-
-function escapeText(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
-}
-
-function extractShortUrl(payload) {
-  const candidates = [
-    payload?.shortenedUrl, payload?.shortened_url, payload?.shortUrl, payload?.short_url,
-    payload?.url, payload?.link, payload?.data?.shortenedUrl, payload?.data?.shortened_url,
-    payload?.data?.shortUrl, payload?.data?.url, payload?.data?.link
-  ];
-  return candidates.find((value) => /^https?:\/\//i.test(String(value || ''))) || '';
-}
-
-function renderHistory() {
-  const list = $('link-history');
-  const empty = $('link-history-empty');
-  if (!list || !empty) return;
-  const items = getHistory();
-  empty.hidden = items.length > 0;
-  list.innerHTML = items.map((item) => `
-    <div class="history-item">
-      <div>
-        <strong>${escapeText(item.title || 'Link rút gọn')}</strong>
-        <small>${escapeText(item.original)}</small>
-      </div>
-      <button class="mini-copy" data-copy="${escapeText(item.short)}" type="button">Copy</button>
-    </div>
-  `).join('');
-  list.querySelectorAll('[data-copy]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(button.dataset.copy).catch(() => {});
-      window.showToast?.('Đã sao chép link rút gọn.', 'success');
-    });
-  });
-}
-
-function renderResult(shortUrl) {
-  $('short-result').hidden = !shortUrl;
-  $('short-url').value = shortUrl;
-  const qrTarget = $('qrcode');
-  qrTarget.innerHTML = '';
-  if (shortUrl && window.QRCode) {
-    new window.QRCode(qrTarget, { text: shortUrl, width: 190, height: 190, correctLevel: window.QRCode.CorrectLevel.M });
-  }
-}
-
-async function shorten() {
-  const apiKey = $('link4m-api-key').value.trim();
-  const title = $('link4m-title').value.trim();
-  const url = $('link4m-url').value.trim();
-  if (!apiKey) return window.showToast?.('Vui lòng nhập API Key Link4M.', 'warning');
-  if (!/^https?:\/\//i.test(url)) return window.showToast?.('Link gốc phải bắt đầu bằng http:// hoặc https://.', 'warning');
-
-  $('shorten-button').disabled = true;
-  $('shorten-button').classList.add('loading');
+async function copyText(text, button) {
   try {
-    const response = await fetch(backendUrl('/api/link4m/shorten'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ apiKey, title, url })
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Rút gọn link thất bại.');
-    const shortUrl = extractShortUrl(payload.data || payload);
-    if (!shortUrl) throw new Error('Link4M không trả về URL rút gọn ở định dạng nhận diện được.');
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+  }
 
-    saveKey(apiKey);
-    renderResult(shortUrl);
-    const history = getHistory();
-    history.unshift({ title: title || 'Link rút gọn', original: url, short: shortUrl, createdAt: new Date().toISOString() });
-    setHistory(history);
-    renderHistory();
-    window.showToast?.('Rút gọn link thành công.', 'success');
-  } catch (error) {
-    window.showToast?.(error.message, 'error');
-  } finally {
-    $('shorten-button').disabled = false;
-    $('shorten-button').classList.remove('loading');
+  if (button) {
+    const original = button.innerHTML;
+    button.innerHTML = '✓ Đã sao chép';
+    button.classList.add('copied');
+    window.setTimeout(() => {
+      button.innerHTML = original;
+      button.classList.remove('copied');
+    }, 2000);
   }
 }
 
-function bind() {
-  loadKey();
-  renderHistory();
-  $('toggle-api-key')?.addEventListener('click', () => {
-    const input = $('link4m-api-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-  });
-  $('change-api-key')?.addEventListener('click', () => {
-    localStorage.removeItem(KEY);
-    $('link4m-api-key').value = '';
-    updateKeyState(false);
-    window.showToast?.('Đã xóa API Key đã lưu trên thiết bị.', 'success');
-  });
-  $('shorten-button')?.addEventListener('click', shorten);
-  $('copy-short')?.addEventListener('click', async () => {
-    const value = $('short-url').value;
-    if (!value) return;
-    await navigator.clipboard.writeText(value).catch(() => {});
-    window.showToast?.('Đã sao chép link rút gọn.', 'success');
-  });
-  $('clear-history')?.addEventListener('click', () => {
-    setHistory([]);
-    renderHistory();
-    window.showToast?.('Đã xóa lịch sử link.', 'success');
+async function createQrCode(url, canvas) {
+  if (!canvas || !window.QRCode) return;
+  canvas.innerHTML = '';
+  const qrTarget = document.createElement('div');
+  qrTarget.style.maxWidth = '100%';
+  canvas.appendChild(qrTarget);
+  await new Promise((resolve, reject) => {
+    try {
+      const qr = new QRCode(qrTarget, {
+        text: url,
+        width: 220,
+        height: 220,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+      if (qr) resolve(); else resolve();
+    } catch (error) {
+      reject(error);
+    }
+  }).catch(() => {
+    canvas.textContent = 'Không tạo được QR Code.';
   });
 }
 
-export function initLink4M() {
-  bind();
+async function handleSubmit(event) {
+  event.preventDefault();
+  const elements = getElements();
+  const apiKey = elements.apiKey.value.trim();
+  const url = elements.targetUrl.value.trim();
+
+  if (!apiKey) {
+    setStatus('Vui lòng nhập API Key Link4M.', 'error');
+    elements.apiKey.focus();
+    return;
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    setStatus('Link đích không hợp lệ. Hãy nhập URL đầy đủ, ví dụ https://example.com.', 'error');
+    elements.targetUrl.focus();
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEY, apiKey);
+  elements.submit.disabled = true;
+  elements.submit.innerHTML = '<span class="button-spinner"></span> Đang rút gọn...';
+  elements.result.hidden = true;
+  setStatus('Đang gọi Link4M API thông qua backend...', 'info');
+
+  try {
+    const data = await apiFetch('/api/link4m/shorten', {
+      method: 'POST',
+      body: JSON.stringify({ apiKey, url }),
+    });
+
+    const shortUrl = data?.shortUrl;
+    if (!shortUrl) {
+      throw new Error('Backend không trả về link rút gọn.');
+    }
+
+    elements.shortUrl.value = shortUrl;
+    elements.result.hidden = false;
+    await createQrCode(shortUrl, elements.qr);
+    setStatus('Rút gọn thành công.', 'success');
+  } catch (error) {
+    setStatus(error.message || 'Không thể rút gọn link.', 'error');
+  } finally {
+    elements.submit.disabled = false;
+    elements.submit.textContent = 'Rút gọn ngay';
+  }
+}
+
+export function mountLink4m() {
+  const elements = getElements();
+  if (!elements.form || initialized) return;
+  initialized = true;
+
+  elements.apiKey.value = localStorage.getItem(STORAGE_KEY) || '';
+  elements.form.addEventListener('submit', handleSubmit);
+  elements.copy.addEventListener('click', () => copyText(elements.shortUrl.value, elements.copy));
+}
+
+export function unmountLink4m() {
+  // The page is SPA-based; the controls are kept in DOM and hidden by the router.
 }

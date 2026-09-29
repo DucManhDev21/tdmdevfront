@@ -1,200 +1,103 @@
-import CONFIG from './config.js';
+import { apiFetch, escapeHtml } from './config.js';
 
-const TOKEN_KEY = 'tdmdev_admin_token';
-const $ = (id) => document.getElementById(id);
+const $ = (selector) => document.querySelector(selector);
+const tokenKey = 'tdmdev_admin_token';
+const labels = {
+  link4m: { title: 'Rút gọn Link4M', desc: 'Tạo đường dẫn rút gọn và mã QR.', icon: '↗' },
+  tempmail: { title: 'Email tạm thời', desc: 'Tạo hộp thư dùng một lần và nhận thư đến.', icon: '✉' },
+  sendmail: { title: 'Gửi email', desc: 'Gửi nội dung email và tệp đính kèm.', icon: '➤' },
+};
+let token = sessionStorage.getItem(tokenKey) || '';
+let currentTools = {};
 
-let menus = [];
-let editingId = '';
-
-function apiUrl(path) {
-  return `${CONFIG.BACKEND_URL.replace(/\/$/, '')}${path}`;
+function status(el, message = '', type = 'info') {
+  if (!el) return;
+  el.textContent = message;
+  el.dataset.type = type;
+  el.classList.toggle('show', Boolean(message));
 }
-
-function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
-function authHeaders() { return { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }; }
-
-async function request(path, options = {}) {
-  const response = await fetch(apiUrl(path), {
-    ...options,
-    headers: { ...authHeaders(), ...(options.headers || {}) }
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || payload.ok === false) {
-    const error = new Error(payload.message || payload.error || `HTTP ${response.status}`);
-    error.status = response.status;
-    throw error;
-  }
-  return payload;
+function setLoggedIn(value) {
+  $('#login-view').classList.toggle('hidden', value);
+  $('#dashboard').classList.toggle('hidden', !value);
 }
-
-function escapeText(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+function renderTools(tools = {}) {
+  currentTools = { ...tools };
+  $('#tool-list').innerHTML = Object.entries(labels).map(([key, item]) => {
+    const enabled = tools[key] !== false;
+    return `<div class="tool-row"><div class="tool-meta"><div class="tool-icon">${item.icon}</div><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.desc)} · <span data-state="${key}">${enabled ? 'Đang hoạt động' : 'Đang tắt'}</span></small></div></div><label class="switch" aria-label="${escapeHtml(item.title)}"><input type="checkbox" data-tool="${key}" ${enabled ? 'checked' : ''}><span class="slider"></span></label></div>`;
+  }).join('');
 }
-
-function showToast(message, type = 'info') {
-  const host = $('admin-toast');
-  const toast = document.createElement('div');
-  toast.className = `admin-toast-item ${type}`;
-  toast.textContent = message;
-  host.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
-}
-
-async function login() {
-  const password = $('admin-password').value;
-  $('admin-login-button').disabled = true;
+async function loadConfig() {
   try {
-    const response = await fetch(apiUrl('/api/admin/login'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ password })
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(payload.message || 'Đăng nhập thất bại.');
-    sessionStorage.setItem(TOKEN_KEY, payload.token);
-    showDashboard();
-    showToast('Đăng nhập quản trị thành công.', 'success');
+    const data = await apiFetch('/api/admin/config', { headers: { Authorization: `Bearer ${token}` } });
+    renderTools(data.tools || {});
+    $('#system-banner').value = data.banner || '';
+    updateCount();
+    status($('#panel-status'), 'Đã tải cấu hình mới nhất từ backend.', 'success');
   } catch (error) {
-    showToast(error.message, 'error');
-  } finally {
-    $('admin-login-button').disabled = false;
+    if (error.status === 401) logout(false);
+    status($('#panel-status'), error.message || 'Không tải được cấu hình.', 'error');
   }
 }
-
-function logout() {
-  sessionStorage.removeItem(TOKEN_KEY);
-  window.location.reload();
-}
-
-async function loadMenus() {
-  const response = await request('/api/menu', { headers: { Accept: 'application/json', Authorization: `Bearer ${token()}` } });
-  menus = Array.isArray(response.menus) ? response.menus : [];
-  renderMenus();
-}
-
-function renderMenus() {
-  const container = $('admin-menu-list');
-  $('menu-total').textContent = String(menus.length);
-  if (!menus.length) {
-    container.innerHTML = '<div class="empty-admin">Chưa có mục menu.</div>';
-    return;
-  }
-  container.innerHTML = menus.map((item) => `
-    <article class="admin-menu-card">
-      <div class="menu-card-number">${escapeText(item.order)}</div>
-      <div class="menu-card-body">
-        <div class="menu-card-title-row"><h3>${escapeText(item.title)}</h3><span class="badge">${item.type === 'iframe' ? 'iFrame Modal' : 'External'}</span></div>
-        <p>${escapeText(item.url)}</p>
-      </div>
-      <div class="menu-card-actions">
-        <button type="button" class="secondary" data-edit="${escapeText(item.id)}">Sửa</button>
-        <button type="button" class="danger" data-delete="${escapeText(item.id)}">Xóa</button>
-      </div>
-    </article>
-  `).join('');
-  container.querySelectorAll('[data-edit]').forEach((button) => button.addEventListener('click', () => startEdit(button.dataset.edit)));
-  container.querySelectorAll('[data-delete]').forEach((button) => button.addEventListener('click', () => deleteMenu(button.dataset.delete)));
-}
-
-function resetForm() {
-  editingId = '';
-  $('menu-form-title').textContent = 'Thêm mục menu';
-  $('menu-submit').textContent = 'Lưu menu';
-  $('menu-title').value = '';
-  $('menu-type').value = 'external';
-  $('menu-url').value = '';
-  $('menu-order').value = menus.length ? Math.max(...menus.map((x) => Number(x.order) || 0)) + 10 : 10;
-}
-
-function startEdit(id) {
-  const item = menus.find((menu) => menu.id === id);
-  if (!item) return;
-  editingId = id;
-  $('menu-form-title').textContent = `Chỉnh sửa: ${item.title}`;
-  $('menu-submit').textContent = 'Cập nhật menu';
-  $('menu-title').value = item.title;
-  $('menu-type').value = item.type;
-  $('menu-url').value = item.url;
-  $('menu-order').value = item.order;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-async function saveMenu(event) {
+async function login(event) {
   event.preventDefault();
-  const body = {
-    title: $('menu-title').value.trim(),
-    type: $('menu-type').value,
-    url: $('menu-url').value.trim(),
-    order: Number($('menu-order').value)
-  };
-  if (!body.title || !/^https?:\/\//i.test(body.url)) {
-    showToast('Vui lòng nhập tên và URL http/https hợp lệ.', 'warning');
-    return;
-  }
-  $('menu-submit').disabled = true;
+  const value = $('#admin-token').value.trim();
+  if (!value) return status($('#login-status'), 'Vui lòng nhập Admin Pass Token.', 'error');
+  const button = $('#login-btn');
+  button.disabled = true;
+  button.textContent = 'Đang xác thực…';
+  status($('#login-status'), 'Đang kết nối backend để xác thực token…', 'info');
   try {
-    if (editingId) {
-      await request(`/api/menu/${encodeURIComponent(editingId)}`, { method: 'PUT', body: JSON.stringify(body) });
-      showToast('Đã cập nhật menu.', 'success');
-    } else {
-      await request('/api/menu', { method: 'POST', body: JSON.stringify(body) });
-      showToast('Đã thêm menu.', 'success');
-    }
-    await loadMenus();
-    resetForm();
+    await apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ token: value }) });
+    token = value;
+    sessionStorage.setItem(tokenKey, token);
+    setLoggedIn(true);
+    await loadConfig();
   } catch (error) {
-    if (error.status === 401) return logout();
-    showToast(error.message, 'error');
+    token = '';
+    sessionStorage.removeItem(tokenKey);
+    status($('#login-status'), error.message || 'Không thể xác thực token.', 'error');
   } finally {
-    $('menu-submit').disabled = false;
+    button.disabled = false;
+    button.innerHTML = 'Xác thực & mở bảng điều khiển <span>→</span>';
   }
 }
-
-async function deleteMenu(id) {
-  const item = menus.find((menu) => menu.id === id);
-  if (!item) return;
-  if (!window.confirm(`Xóa mục "${item.title}"?`)) return;
+async function saveConfig() {
+  if (!token) return;
+  const tools = {};
+  document.querySelectorAll('[data-tool]').forEach((input) => { tools[input.dataset.tool] = input.checked; });
+  const button = $('#save-btn');
+  button.disabled = true;
+  button.textContent = 'Đang lưu…';
+  status($('#save-status'), 'Đang gửi cấu hình lên backend…', 'info');
   try {
-    await request(`/api/menu/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    showToast('Đã xóa menu.', 'success');
-    await loadMenus();
-    if (editingId === id) resetForm();
+    const data = await apiFetch('/api/admin/config', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ tools, banner: $('#system-banner').value.trim() }),
+    });
+    renderTools(data.tools || tools);
+    status($('#save-status'), 'Đã lưu cấu hình thành công.', 'success');
   } catch (error) {
-    if (error.status === 401) return logout();
-    showToast(error.message, 'error');
+    if (error.status === 401) logout(false);
+    status($('#save-status'), error.message || 'Không thể lưu cấu hình.', 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Lưu thay đổi ↗';
   }
 }
-
-function connectStream() {
-  if (!('EventSource' in window)) return;
-  const source = new EventSource(apiUrl('/api/menu/stream'));
-  source.addEventListener('menu', (event) => {
-    try {
-      menus = JSON.parse(event.data) || [];
-      renderMenus();
-    } catch (_) {}
-  });
+function logout(showMessage = true) {
+  token = '';
+  sessionStorage.removeItem(tokenKey);
+  setLoggedIn(false);
+  $('#admin-token').value = '';
+  if (showMessage) status($('#login-status'), 'Bạn đã đăng xuất khỏi phiên quản trị.', 'info');
 }
-
-function showDashboard() {
-  $('login-screen').hidden = true;
-  $('dashboard').hidden = false;
-  resetForm();
-  loadMenus().catch((error) => {
-    if (error.status === 401) return logout();
-    showToast(error.message, 'error');
-  });
-  connectStream();
-}
-
-function bind() {
-  $('admin-login-form').addEventListener('submit', (event) => { event.preventDefault(); login(); });
-  $('logout-button').addEventListener('click', logout);
-  $('menu-form').addEventListener('submit', saveMenu);
-  $('reset-form').addEventListener('click', resetForm);
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  bind();
-  if (token()) showDashboard();
-});
+function updateCount() { $('#char-count').textContent = String($('#system-banner').value.length); }
+$('#login-form').addEventListener('submit', login);
+$('#save-btn').addEventListener('click', saveConfig);
+$('#clear-banner').addEventListener('click', () => { $('#system-banner').value = ''; updateCount(); });
+$('#system-banner').addEventListener('input', updateCount);
+$('#logout-btn').addEventListener('click', () => logout(true));
+$('#year').textContent = new Date().getFullYear();
+if (token) { setLoggedIn(true); loadConfig(); }
