@@ -1,136 +1,580 @@
 <!doctype html>
-<html lang="vi" data-theme="dark">
+<html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0d12">
-  <meta name="description" content="TDM Dev — Email tạm thời Temp Mail và rút gọn link với Link4M.">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="TDM Dev — hệ sinh thái công cụ số tốc độ, tự do dành cho Dev & Creators.">
   <meta name="robots" content="index,follow">
-  <link rel="icon" type="image/x-icon" href="./favicon.ico">
-  <link rel="apple-touch-icon" href="./logo.png">
-  <title>TDM Dev — Temp Mail & Link4M</title>
+  <link rel="icon" href="/favicon.ico">
+  <title>TDM Dev — Digital Tools for Devs & Creators</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    :root{
-      --bg:#090b10;--bg2:#10131a;--card:rgba(20,24,33,.72);--card2:rgba(255,255,255,.055);--text:#f7f8fb;--muted:#9aa3b2;--line:rgba(255,255,255,.10);--accent:#7c5cff;--accent2:#26d6ff;--good:#42dc9f;--warn:#f5bf54;--bad:#ff667e;--shadow:0 24px 80px rgba(0,0,0,.34);--radius:24px;--blur:18px
+    :root {
+      --bg: #0f172a;
+      --bg-deep: #080d19;
+      --card: #1e293b;
+      --card-2: rgba(30, 41, 59, 0.72);
+      --accent: #3b82f6;
+      --accent-2: #8b5cf6;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --border: rgba(148, 163, 184, 0.14);
+      --shadow: 0 20px 60px rgba(2, 6, 23, 0.45);
+      --ease: cubic-bezier(.2,.8,.2,1);
     }
-    html[data-theme="light"]{--bg:#f5f7fb;--bg2:#e8edf5;--card:rgba(255,255,255,.76);--card2:rgba(10,18,30,.045);--text:#161b25;--muted:#677386;--line:rgba(20,28,40,.11);--shadow:0 24px 70px rgba(56,71,102,.16)}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 10% -5%,rgba(124,92,255,.24),transparent 33%),radial-gradient(circle at 95% 10%,rgba(38,214,255,.17),transparent 32%),linear-gradient(140deg,var(--bg),var(--bg2));min-height:100vh;overflow-x:hidden}body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(to bottom,black,transparent 90%)}body.loading-lock{overflow:hidden}.drawer-lock,.modal-lock{overflow:hidden}
-    button,input,select{font:inherit}.app{width:min(1180px,100%);margin:0 auto;padding:18px 18px 60px}.topbar{position:sticky;top:14px;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);border-radius:18px}.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none}.brand img{width:44px;height:44px;object-fit:cover;border-radius:13px;border:1px solid var(--line)}.brand b{font-size:16px;letter-spacing:.2px}.brand span{font-size:11px;color:var(--muted);display:block;margin-top:2px}.top-actions{display:flex;align-items:center;gap:9px}.icon-button,.menu-button{border:1px solid var(--line);background:var(--card2);color:var(--text);width:42px;height:42px;border-radius:13px;display:grid;place-items:center;cursor:pointer;transition:.2s}.icon-button:hover,.menu-button:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.45);background:rgba(124,92,255,.10)}.hamburger{width:18px;height:14px;display:grid;align-content:space-between}.hamburger span{display:block;height:2px;border-radius:2px;background:currentColor}.hero{padding:72px 4px 30px;display:grid;grid-template-columns:1.25fr .75fr;gap:22px;align-items:end}.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card2);font-size:12px;color:var(--muted)}.pulse{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 6px rgba(66,220,159,.1)}h1{font-size:clamp(37px,6vw,70px);line-height:.98;letter-spacing:-2.8px;margin:16px 0 16px;max-width:760px}.hero p{font-size:16px;line-height:1.75;color:var(--muted);max-width:700px;margin:0}.hero-panel{border:1px solid var(--line);background:var(--card);backdrop-filter:blur(var(--blur));border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}.hero-panel strong{display:block;font-size:14px;margin-bottom:10px}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--card2)}.stat small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.stat b{font-size:15px}
-    .section-grid{display:grid;grid-template-columns:1.3fr .9fr;gap:22px;align-items:start}.panel{border:1px solid var(--line);background:var(--card);backdrop-filter:blur(var(--blur));border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:22px 22px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line)}.panel-title{display:flex;gap:13px;align-items:flex-start}.panel-icon{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);background:var(--card2);border-radius:14px;font-size:21px}.panel-head h2{font-size:18px;margin:0 0 5px}.panel-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}.status-pill{font-size:10px;padding:7px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}.status-pill[data-tone="success"]{color:var(--good);border-color:rgba(66,220,159,.25)}.status-pill[data-tone="warning"]{color:var(--warn);border-color:rgba(245,191,84,.25)}.status-pill[data-tone="error"]{color:var(--bad);border-color:rgba(255,102,126,.25)}
-    .panel-body{padding:22px}.email-display{display:flex;gap:10px;align-items:center;padding:14px;border:1px solid var(--line);background:rgba(0,0,0,.09);border-radius:18px}.email-display input{flex:1;min-width:0;border:0;background:transparent;outline:0;color:var(--text);font-size:15px;font-weight:700}.primary,.secondary,.danger,.ghost{border:1px solid var(--line);border-radius:13px;padding:11px 13px;cursor:pointer;transition:.2s;font-weight:700}.primary{color:white;border-color:transparent;background:linear-gradient(135deg,var(--accent),#a34eff);box-shadow:0 14px 34px rgba(124,92,255,.28)}.primary:hover{transform:translateY(-1px)}.secondary{background:var(--card2);color:var(--text)}.danger{background:rgba(255,102,126,.08);border-color:rgba(255,102,126,.22);color:var(--bad)}.ghost{background:transparent;color:var(--muted)}.button-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.mini{font-size:12px;padding:8px 10px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:7px}.field input,.field select{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:13px;outline:0;background:var(--card2);color:var(--text)}.field input:focus,.field select:focus{border-color:rgba(124,92,255,.55);box-shadow:0 0 0 4px rgba(124,92,255,.09)}.field.full{grid-column:1/-1}.field-hint{font-size:10px;color:var(--muted);margin-top:6px}.countdown{margin-left:auto;font-size:11px;color:var(--muted)}.inbox-head{margin-top:20px;display:flex;align-items:center;gap:10px}.inbox-head h3{font-size:13px;margin:0}.count-badge{min-width:24px;height:24px;display:grid;place-items:center;padding:0 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px}.message-list{display:grid;gap:8px;margin-top:10px}.message-row{width:100%;border:1px solid var(--line);background:rgba(0,0,0,.06);color:var(--text);display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;text-align:left;align-items:center;padding:12px;border-radius:14px;cursor:pointer}.message-row:hover{background:var(--card2);border-color:rgba(38,214,255,.25)}.message-avatar{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:rgba(38,214,255,.10);color:var(--accent2)}.message-main{min-width:0}.message-main strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.message-main small{display:block;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}.message-meta{color:var(--muted);font-size:10px;white-space:nowrap}.empty-state,.menu-empty{border:1px dashed var(--line);border-radius:16px;padding:22px;text-align:center;color:var(--muted);font-size:12px;margin-top:10px}
-    .key-wrap{position:relative}.key-wrap input{padding-right:86px}.key-tools{position:absolute;right:7px;top:7px;display:flex;gap:4px}.key-tools button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;padding:6px 7px;border-radius:8px}.key-tools button:hover{background:var(--card2);color:var(--text)}.result{margin-top:16px;padding:14px;border:1px solid rgba(66,220,159,.18);border-radius:18px;background:rgba(66,220,159,.045)}.result-grid{display:grid;grid-template-columns:1fr 206px;gap:14px;align-items:center}.result input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--text);font-size:12px}.qr-card{background:white;border-radius:14px;padding:8px;display:grid;place-items:center}.qr-card > div{min-height:190px}.history-head{display:flex;justify-content:space-between;align-items:center;margin-top:22px}.history-head h3{font-size:13px;margin:0}.history-list{display:grid;gap:8px;margin-top:10px}.history-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.05)}.history-item strong{display:block;font-size:12px}.history-item small{display:block;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}.mini-copy{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;padding:7px 9px;cursor:pointer;font-size:11px}.info-card{padding:16px 18px;color:var(--muted);font-size:12px;line-height:1.75}.info-card strong{color:var(--text)}footer{display:flex;justify-content:space-between;gap:12px;margin-top:22px;color:var(--muted);font-size:11px;padding:8px 4px}.footer-links{display:flex;gap:13px}.footer-links a{color:inherit;text-decoration:none}.footer-links a:hover{color:var(--text)}
-    .app-loader{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,rgba(124,92,255,.16),transparent 34%),linear-gradient(135deg,#07080d,#111521);transition:opacity .5s ease,visibility .5s ease}.app-loader.fade-out{opacity:0;visibility:hidden}.loader-inner{text-align:center}.loader-logo{width:88px;height:88px;object-fit:cover;border-radius:24px;border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 65px rgba(0,0,0,.35);opacity:.86}.loader-ring{width:118px;height:118px;border-radius:50%;border:2px solid rgba(255,255,255,.12);border-top-color:var(--accent2);border-right-color:var(--accent);animation:spin 1.1s linear infinite;position:absolute;transform:translate(-15px,-15px)}.loader-spinner{position:relative;width:118px;height:118px;display:grid;place-items:center;margin:0 auto 22px}.loader-inner p{margin:0;color:#aab3c1;font-size:12px;letter-spacing:.18em;text-transform:uppercase}.loader-inner small{display:block;color:#6d7786;margin-top:8px;font-size:10px}@keyframes spin{to{transform:translate(-15px,-15px) rotate(360deg)}}
-    .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.46);backdrop-filter:blur(5px);z-index:70;opacity:0;visibility:hidden;transition:.25s}.drawer-backdrop.open{opacity:1;visibility:visible}.drawer{position:fixed;z-index:80;top:0;right:0;width:min(390px,92vw);height:100dvh;background:var(--card);backdrop-filter:blur(26px);border-left:1px solid var(--line);transform:translateX(101%);transition:transform .32s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding:22px}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;justify-content:space-between;align-items:center}.drawer-brand{display:flex;align-items:center;gap:10px}.drawer-brand img{width:42px;height:42px;border-radius:12px}.drawer-brand strong{display:block}.drawer-brand small{color:var(--muted);font-size:10px}.drawer-body{overflow:auto;padding-top:22px}.drawer-section{margin-bottom:20px}.drawer-section h3{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:0 0 9px}.drawer-link{width:100%;display:flex;gap:10px;align-items:center;padding:12px 13px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:13px;text-align:left;cursor:pointer}.drawer-link:hover{background:var(--card2);border-color:var(--line)}.drawer-link-icon{width:27px;height:27px;display:grid;place-items:center;border-radius:9px;background:var(--card2);color:var(--accent2);font-size:12px}.theme-row{display:flex;align-items:center;justify-content:space-between;padding:13px;border:1px solid var(--line);border-radius:13px;background:var(--card2)}.theme-row span{font-size:12px}.theme-row button{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:9px;padding:8px 10px;font-size:11px;cursor:pointer}
-    .modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.58);backdrop-filter:blur(9px);opacity:0;visibility:hidden;transition:.2s}.modal.open{opacity:1;visibility:visible}.modal-card{width:min(1100px,100%);max-height:min(92dvh,900px);display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;transform:translateY(10px);transition:.2s}.modal.open .modal-card{transform:translateY(0)}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}.modal-head h3{font-size:14px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.modal-content{min-height:0;overflow:auto}.iframe-wrap{position:relative;height:min(78dvh,800px);background:white}.iframe-wrap iframe{width:100%;height:100%;border:0;display:block}.iframe-loader{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.9);color:#111}.iframe-loader div{text-align:center}.tiny-spinner{width:30px;height:30px;border:3px solid #ddd;border-top-color:#444;border-radius:50%;animation:spin2 .8s linear infinite;margin:0 auto 8px}@keyframes spin2{to{transform:rotate(360deg)}}.message-modal-content{padding:18px}.mail-details{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}.mail-details>div{padding:12px;border:1px solid var(--line);border-radius:12px}.mail-details span{display:block;color:var(--muted);font-size:10px;margin-bottom:3px}.mail-details strong{font-size:12px;word-break:break-word}.mail-content-box{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}.mail-content-box pre{white-space:pre-wrap;word-break:break-word;padding:16px;margin:0;line-height:1.65;font-family:inherit;font-size:12px}.mail-html-frame{width:100%;height:55dvh;border:0;background:white}.attachments{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.attachments h4{width:100%;font-size:12px;margin:0}.attachments a,.attachments span{font-size:11px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;color:var(--text);text-decoration:none}
-    .toast-host{position:fixed;right:18px;bottom:18px;z-index:500;display:grid;gap:9px;max-width:min(380px,calc(100vw - 36px))}.toast{opacity:0;transform:translateY(10px);display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:13px;border:1px solid var(--line);background:rgba(17,20,27,.92);color:#f8f9fc;box-shadow:0 16px 45px rgba(0,0,0,.35);backdrop-filter:blur(16px);font-size:12px;transition:.2s}.toast.show{opacity:1;transform:translateY(0)}.toast-dot{width:8px;height:8px;border-radius:50%;background:#9aa3b2}.toast-success .toast-dot{background:var(--good)}.toast-warning .toast-dot{background:var(--warn)}.toast-error .toast-dot{background:var(--bad)}.confirm-card{width:min(450px,100%);padding:22px}.confirm-card h3{margin:0 0 8px;font-size:16px}.confirm-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}.confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.hidden{display:none!important}
-    @media (max-width:900px){.hero,.section-grid{grid-template-columns:1fr}.hero{padding-top:48px}.hero-panel{max-width:none}.result-grid{grid-template-columns:1fr 190px}}
-    @media (max-width:640px){.app{padding:10px 11px 45px}.topbar{top:8px}.brand img{width:40px;height:40px}.hero{padding:42px 2px 22px}.hero p{font-size:14px}.panel-head,.panel-body{padding:16px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.email-display{align-items:stretch;flex-direction:column}.button-row .primary,.button-row .secondary,.button-row .danger{flex:1}.result-grid{grid-template-columns:1fr}.qr-card{width:204px}.message-row{grid-template-columns:34px minmax(0,1fr)}.message-meta{display:none}footer{flex-direction:column}.mail-details{grid-template-columns:1fr}.drawer{padding:17px}.modal{padding:8px}.modal-card{border-radius:17px}.iframe-wrap{height:84dvh}}
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--bg-deep); }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(59,130,246,.16), transparent 32%),
+        radial-gradient(circle at 90% 10%, rgba(139,92,246,.13), transparent 30%),
+        linear-gradient(180deg, #0b1120 0%, var(--bg) 34%, #0b1120 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+    body.modal-open { overflow: hidden; }
+    a { color: inherit; text-decoration: none; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .6; }
+    ::selection { background: rgba(59,130,246,.3); }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: #0a1020; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(var(--accent), var(--accent-2)); border-radius: 999px; }
+
+    #preloader {
+      position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center;
+      background: radial-gradient(circle at center, rgba(30,41,59,.96), #050914 72%);
+      transition: opacity .5s var(--ease), visibility .5s var(--ease);
+    }
+    #preloader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .preloader-inner { text-align: center; animation: prePulse 1.8s ease-in-out infinite; }
+    .preloader-logo {
+      width: min(220px, 58vw); aspect-ratio: 1; object-fit: contain;
+      filter: drop-shadow(0 0 28px rgba(59,130,246,.35));
+    }
+    .spinner {
+      width: 36px; height: 36px; margin: 22px auto 0; border-radius: 999px;
+      border: 3px solid rgba(148,163,184,.22); border-top-color: var(--accent); border-right-color: var(--accent-2);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes prePulse { 0%,100%{transform:scale(.98);opacity:.78}50%{transform:scale(1);opacity:1} }
+
+    .site-shell { position: relative; overflow: hidden; }
+    .noise::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .04;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+    }
+
+    .container-xl { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .glass {
+      background: var(--card-2); border: 1px solid var(--border); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+    .nav-shell {
+      position: sticky; top: 0; z-index: 40; border-bottom: 1px solid rgba(148,163,184,.08);
+      background: rgba(8,13,25,.76); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+    .nav-bar { min-height: 76px; display:flex; align-items:center; justify-content:space-between; gap:18px; }
+    .brand img { width: 110px; height: 56px; object-fit: contain; filter: drop-shadow(0 0 18px rgba(59,130,246,.18)); }
+    .nav-links { display:flex; align-items:center; gap:8px; }
+    .nav-link {
+      border: 1px solid transparent; color: var(--muted); padding: 10px 13px; border-radius: 12px; font-size: 14px; font-weight: 700;
+      transition: .22s var(--ease); background: transparent;
+    }
+    .nav-link:hover, .nav-link.active { color: #fff; background: rgba(59,130,246,.11); border-color: rgba(59,130,246,.16); }
+    .menu-toggle { display:none; border:1px solid var(--border); background:rgba(30,41,59,.5); border-radius:12px; width:44px; height:44px; color:#fff; }
+
+    .hero { position:relative; padding: 92px 0 70px; z-index: 1; }
+    .hero-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:42px; align-items:center; }
+    .eyebrow { display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(59,130,246,.18); background:rgba(59,130,246,.08); color:#bfdbfe; padding:8px 12px; border-radius:999px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+    .hero h1 { margin:18px 0 16px; font-size: clamp(44px, 7vw, 84px); line-height:.97; letter-spacing:-.06em; font-weight:900; }
+    .gradient-text { background:linear-gradient(100deg, #60a5fa, #a78bfa 55%, #c4b5fd); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .hero p { max-width: 700px; color:#cbd5e1; font-size: clamp(17px, 2vw, 20px); line-height:1.8; }
+    .hero-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
+    .primary-button, .secondary-button {
+      display:inline-flex; align-items:center; justify-content:center; gap:9px; border-radius:13px; min-height:46px; padding:0 17px; transition:.22s var(--ease); border:1px solid var(--border); font-weight:800;
+    }
+    .primary-button { color:#fff; border-color:rgba(96,165,250,.36); background:linear-gradient(135deg, rgba(59,130,246,.97), rgba(139,92,246,.97)); box-shadow: 0 12px 35px rgba(59,130,246,.2); }
+    .primary-button:hover { transform:translateY(-2px); box-shadow:0 16px 42px rgba(59,130,246,.27); }
+    .secondary-button { background:rgba(30,41,59,.72); color:#e2e8f0; }
+    .secondary-button:hover { background:rgba(51,65,85,.8); transform:translateY(-1px); }
+
+    .hero-art { min-height: 370px; position:relative; border-radius:30px; overflow:hidden; padding:24px; }
+    .hero-orbit { position:absolute; width:260px; height:260px; border:1px solid rgba(96,165,250,.25); border-radius:50%; inset:50% auto auto 50%; transform:translate(-50%,-50%); animation: orbitSpin 14s linear infinite; }
+    .hero-orbit::before, .hero-orbit::after { content:""; position:absolute; width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow:0 0 24px var(--accent); }
+    .hero-orbit::before { top:9px; left:50%; transform:translateX(-50%); }
+    .hero-orbit::after { bottom:18px; right:36px; background:var(--accent-2); box-shadow:0 0 24px var(--accent-2); }
+    @keyframes orbitSpin { to{transform:translate(-50%,-50%) rotate(360deg)} }
+    .hero-code { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; justify-content:space-between; padding:20px; border:1px solid var(--border); background:rgba(2,6,23,.54); border-radius:22px; }
+    .window-dots { display:flex; gap:7px; }
+    .window-dots span { width:9px; height:9px; border-radius:50%; background:#475569; }
+    .code-lines { margin-top:20px; color:#cbd5e1; font: 500 14px/2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .code-lines b { color:#60a5fa; }
+    .code-lines i { color:#a78bfa; font-style:normal; }
+    .mini-stat { display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:24px; }
+    .stat-card { padding:14px; border:1px solid var(--border); background:rgba(30,41,59,.55); border-radius:16px; }
+    .stat-card strong { display:block; font-size:18px; }
+    .stat-card span { display:block; margin-top:4px; font-size:11px; color:var(--muted); }
+
+    .banner { position:relative; z-index:2; border:1px solid rgba(96,165,250,.18); background:linear-gradient(90deg, rgba(59,130,246,.11), rgba(139,92,246,.09)); padding:12px 16px; border-radius:16px; color:#dbeafe; display:none; }
+    .banner.visible { display:block; margin:0 0 14px; }
+
+    main { position:relative; z-index:2; padding-bottom:70px; }
+    .section { padding:26px 0 12px; }
+    .section-title { display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:18px; }
+    .section-title h2 { margin:0; font-size:clamp(28px,5vw,42px); letter-spacing:-.045em; }
+    .section-title p { color:var(--muted); margin:0; max-width:650px; line-height:1.7; }
+
+    .tool-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+    .tool-card { text-align:left; padding:20px; border-radius:20px; transition:.22s var(--ease); }
+    .tool-card:hover { transform:translateY(-4px); border-color:rgba(96,165,250,.2); }
+    .tool-card.active { outline:1px solid rgba(96,165,250,.32); box-shadow:0 18px 45px rgba(59,130,246,.11); }
+    .tool-icon { width:44px; height:44px; display:grid; place-items:center; border-radius:14px; background:linear-gradient(135deg, rgba(59,130,246,.18), rgba(139,92,246,.16)); font-size:20px; }
+    .tool-card h3 { margin:15px 0 8px; font-size:17px; }
+    .tool-card p { color:var(--muted); font-size:13px; line-height:1.65; margin:0; }
+    .tool-status { margin-top:15px; display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--muted); }
+    .status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 15px rgba(34,197,94,.5); }
+    .status-dot.off { background:#64748b; box-shadow:none; }
+
+    .panel { display:none; animation: pageIn .34s var(--ease); }
+    .panel.active { display:block; }
+    @keyframes pageIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+    .tool-panel { border-radius:24px; padding:22px; }
+    .panel-head { display:flex; flex-wrap:wrap; align-items:start; justify-content:space-between; gap:14px; margin-bottom:22px; }
+    .panel-head h3 { margin:0; font-size:26px; letter-spacing:-.03em; }
+    .panel-head p { margin:7px 0 0; color:var(--muted); line-height:1.7; max-width:760px; }
+
+    .form-grid { display:grid; gap:15px; }
+    .field label { display:block; margin:0 0 8px; font-size:13px; font-weight:800; color:#e2e8f0; }
+    .field input, .field textarea, .field select {
+      width:100%; border:1px solid var(--border); background:rgba(2,6,23,.38); color:#f8fafc; border-radius:14px; padding:13px 14px; outline:none; transition:.2s ease;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color:rgba(96,165,250,.48); box-shadow:0 0 0 4px rgba(59,130,246,.08); }
+    .field textarea { min-height:220px; resize:vertical; }
+    .hint { color:var(--muted); font-size:12px; margin-top:7px; line-height:1.6; }
+    .inline-grid { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+    .result-card { margin-top:18px; display:grid; grid-template-columns:1fr 260px; gap:18px; align-items:center; }
+    .result-card .qr-box { min-height:240px; border:1px solid var(--border); border-radius:18px; background:#fff; display:grid; place-items:center; padding:10px; }
+    .result-card .qr-box canvas { max-width:100%; height:auto; }
+
+    .status-box { margin-top:14px; border-radius:14px; padding:11px 13px; font-size:13px; border:1px solid var(--border); background:rgba(15,23,42,.48); }
+    .status-box[data-type="success"] { border-color:rgba(34,197,94,.25); color:#bbf7d0; }
+    .status-box[data-type="error"] { border-color:rgba(248,113,113,.28); color:#fecaca; }
+    .status-box[data-type="info"] { color:#cbd5e1; }
+
+    .mail-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:10px; }
+    .mailbox { margin-top:18px; display:grid; gap:10px; }
+    .mail-item { border:1px solid var(--border); border-radius:16px; overflow:hidden; background:rgba(2,6,23,.28); }
+    .mail-item summary { list-style:none; cursor:pointer; display:flex; gap:14px; justify-content:space-between; padding:15px 16px; }
+    .mail-item summary::-webkit-details-marker { display:none; }
+    .mail-summary-main { min-width:0; display:grid; gap:4px; }
+    .mail-summary-main strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .mail-summary-main span, .mail-item time { color:var(--muted); font-size:12px; }
+    .mail-body { border-top:1px solid var(--border); padding:16px; }
+    .mail-meta { color:var(--muted); font-size:12px; margin-bottom:10px; }
+    .mail-content { white-space:pre-wrap; word-break:break-word; color:#e2e8f0; line-height:1.7; }
+    .empty-state { border:1px dashed rgba(148,163,184,.2); border-radius:18px; padding:34px 18px; text-align:center; color:var(--muted); }
+    .empty-icon { font-size:28px; margin-bottom:8px; }
+    .signal-box { margin-top:14px; border:1px solid rgba(250,204,21,.22); background:linear-gradient(135deg, rgba(250,204,21,.11), rgba(59,130,246,.08)); border-radius:16px; padding:15px; }
+    .signal-kicker { color:#fde68a; font-size:11px; font-weight:900; letter-spacing:.08em; }
+    .signal-main { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:7px; }
+    .signal-main strong { font-size:27px; letter-spacing:.03em; }
+    .signal-main a { color:#bfdbfe; word-break:break-all; }
+    .signal-sub { color:var(--muted); font-size:12px; margin-top:6px; }
+
+    .radio-row { display:flex; flex-wrap:wrap; gap:10px; }
+    .radio-pill { position:relative; }
+    .radio-pill input { position:absolute; opacity:0; }
+    .radio-pill span { display:flex; align-items:center; gap:8px; border:1px solid var(--border); background:rgba(2,6,23,.26); padding:10px 13px; border-radius:999px; color:var(--muted); transition:.2s; }
+    .radio-pill input:checked + span { color:#fff; border-color:rgba(96,165,250,.35); background:rgba(59,130,246,.1); }
+
+    .progress-wrap { margin-top:18px; }
+    .progress-track { height:11px; border-radius:999px; overflow:hidden; background:#0b1222; border:1px solid var(--border); }
+    .progress-bar { height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition:width .9s linear; }
+    .progress-label { margin-top:8px; color:#cbd5e1; font-size:12px; }
+    .live-log { margin-top:18px; max-height:340px; overflow:auto; border:1px solid var(--border); border-radius:18px; padding:10px; background:rgba(2,6,23,.3); }
+    .log-row { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; padding:10px; border-bottom:1px solid rgba(148,163,184,.08); align-items:center; font-size:12px; }
+    .log-row:last-child { border-bottom:0; }
+    .log-row span { color:var(--muted); }
+    .log-row em { font-style:normal; font-weight:800; }
+    .log-row small { grid-column:1/-1; color:var(--muted); }
+    .log-success em { color:#86efac; }
+    .log-error em { color:#fca5a5; }
+
+    .modal-card { width:min(760px,100%); max-height:min(90vh,760px); overflow:auto; border-radius:24px; padding:22px; }
+    .modal-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .modal-top h3 { margin:0; font-size:24px; }
+    .close-button { border:1px solid var(--border); background:rgba(15,23,42,.5); width:42px; height:42px; border-radius:12px; color:#e2e8f0; }
+    .admin-grid { display:grid; gap:14px; margin-top:18px; }
+    .admin-tool-row { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; border:1px solid var(--border); padding:15px; border-radius:16px; background:rgba(2,6,23,.28); cursor:pointer; }
+    .admin-tool-row span:first-child { display:grid; gap:4px; }
+    .admin-tool-row small { color:var(--muted); }
+    .toggle-input { position:absolute; opacity:0; pointer-events:none; }
+    .toggle-visual { width:52px; height:30px; border-radius:999px; background:#334155; border:1px solid rgba(148,163,184,.18); position:relative; transition:.2s; }
+    .toggle-visual::after { content:""; position:absolute; width:22px; height:22px; top:3px; left:4px; border-radius:50%; background:#e2e8f0; transition:.2s; }
+    .toggle-input:checked + .toggle-visual { background:linear-gradient(90deg, var(--accent), var(--accent-2)); }
+    .toggle-input:checked + .toggle-visual::after { transform:translateX(21px); }
+
+    .footer { padding:22px 0 48px; color:var(--muted); text-align:center; font-size:12px; }
+    .mobile-drawer { display:none; }
+    .disabled-overlay { border:1px dashed rgba(148,163,184,.25); padding:28px; border-radius:18px; text-align:center; color:var(--muted); }
+    .disabled-overlay strong { display:block; color:#e2e8f0; font-size:18px; margin-bottom:7px; }
+    .button-spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.28); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
+    .copied { color:#bbf7d0; }
+
+    @media (max-width: 980px) {
+      .hero-grid { grid-template-columns:1fr; }
+      .tool-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .result-card { grid-template-columns:1fr; }
+    }
+    @media (max-width: 780px) {
+      .nav-links { display:none; }
+      .menu-toggle { display:inline-grid; place-items:center; }
+      .mobile-drawer { position:absolute; top:76px; left:0; right:0; display:grid; gap:6px; padding:12px 16px 16px; background:rgba(8,13,25,.97); border-bottom:1px solid var(--border); transform:translateY(-10px); opacity:0; visibility:hidden; transition:.25s var(--ease); }
+      .mobile-drawer.open { transform:none; opacity:1; visibility:visible; }
+      .mobile-drawer .nav-link { text-align:left; }
+      .mini-stat { grid-template-columns:1fr; }
+      .mail-toolbar { grid-template-columns:1fr; }
+    }
+    @media (max-width: 600px) {
+      .container-xl { width:min(100% - 22px, 1180px); }
+      .hero { padding-top:52px; }
+      .hero-art { min-height:300px; }
+      .tool-grid { grid-template-columns:1fr; }
+      .tool-panel { padding:15px; }
+      .inline-grid { grid-template-columns:1fr; }
+      .log-row { grid-template-columns:1fr; }
+      .log-row small { grid-column:auto; }
+      .nav-bar { min-height:68px; }
+      .brand img { width:100px; height:52px; }
+    }
   </style>
 </head>
-<body class="loading-lock">
-  <div id="app-loader" class="app-loader" aria-live="polite">
-    <div class="loader-inner">
-      <div class="loader-spinner"><div class="loader-ring"></div><img class="loader-logo" src="./logo.png" alt="TDM Dev"></div>
-      <p>Đang khởi động TDM Dev</p>
-      <small>Đang tải menu Firebase & tạo email tạm thời…</small>
+<body class="noise">
+  <div id="preloader">
+    <div class="preloader-inner">
+      <img class="preloader-logo" src="/logotdm.png" width="500" height="500" alt="TDM Dev">
+      <div class="spinner" aria-label="Đang tải"></div>
     </div>
   </div>
 
-  <div id="drawer-backdrop" class="drawer-backdrop"></div>
-  <aside id="app-drawer" class="drawer" aria-label="Menu điều hướng">
-    <div class="drawer-head">
-      <div class="drawer-brand"><img src="./logo.png" alt="TDM Dev"><div><strong>TDM Dev</strong><small>Công cụ tiện ích</small></div></div>
-      <button id="drawer-close" class="icon-button" type="button" aria-label="Đóng menu">×</button>
-    </div>
-    <div class="drawer-body">
-      <div class="drawer-section">
-        <h3>Nhanh</h3>
-        <button class="drawer-link" type="button" onclick="document.getElementById('temp-mail').scrollIntoView({behavior:'smooth'});document.getElementById('drawer-close').click()"><span class="drawer-link-icon">✉</span><span>Email Tạm Thời</span></button>
-        <button class="drawer-link" type="button" onclick="document.getElementById('link4m').scrollIntoView({behavior:'smooth'});document.getElementById('drawer-close').click()"><span class="drawer-link-icon">↗</span><span>Rút Gọn Link</span></button>
-        <a class="drawer-link" href="./admin.html" style="text-decoration:none"><span class="drawer-link-icon">⚙</span><span>Admin Panel</span></a>
+  <div class="site-shell">
+    <header class="nav-shell">
+      <div class="container-xl nav-bar">
+        <a class="brand" href="/" data-route="home" aria-label="TDM Dev">
+          <img src="/logo.png" width="611" height="369" alt="TDM Dev Logo">
+        </a>
+        <nav class="nav-links" aria-label="Điều hướng chính">
+          <button class="nav-link active" data-route="home">Trang chủ</button>
+          <button class="nav-link" data-route="link4m">Rút gọn link</button>
+          <button class="nav-link" data-route="tempmail">Email tạm</button>
+          <button class="nav-link" data-route="sendmail">Gửi email</button>
+          <a class="nav-link" href="/admin.html">Admin ↗</a>
+        </nav>
+        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Mở menu">☰</button>
       </div>
-      <div class="drawer-section">
-        <h3>Menu động từ Firebase</h3>
-        <div id="dynamic-menu"><div class="menu-empty">Đang tải menu…</div></div>
+      <div class="container-xl mobile-drawer" id="mobile-drawer">
+        <button class="nav-link active" data-route="home">Trang chủ</button>
+        <button class="nav-link" data-route="link4m">Rút gọn link</button>
+        <button class="nav-link" data-route="tempmail">Email tạm</button>
+        <button class="nav-link" data-route="sendmail">Gửi email</button>
+        <a class="nav-link" href="/admin.html">Admin ↗</a>
       </div>
-      <div class="drawer-section">
-        <h3>Giao diện</h3>
-        <div class="theme-row"><span id="theme-toggle-label">Chế độ sáng</span><button id="theme-toggle" type="button">Đổi theme</button></div>
-      </div>
-      <div class="info-card"><strong>TDM Dev</strong><br>Frontend thuần HTML/CSS/JS. CSS được gộp trực tiếp trong từng HTML để giảm request HTTP và giữ repo gọn. Dữ liệu menu đi qua backend Railway → Firestore.</div>
-    </div>
-  </aside>
-
-  <main class="app">
-    <header class="topbar">
-      <a class="brand" href="#top"><img src="./logo.png" alt="TDM Dev"><div><b>TDM Dev</b><span>Temp Mail • Link4M</span></div></a>
-      <div class="top-actions"><button id="hamburger" class="menu-button" type="button" aria-label="Mở menu"><span class="hamburger"><span></span><span></span><span></span></span></button></div>
     </header>
 
-    <section id="top" class="hero">
-      <div>
-        <div class="eyebrow"><span class="pulse"></span> Dịch vụ đang hoạt động</div>
-        <h1>Hai công cụ.<br>Một không gian gọn gàng.</h1>
-        <p>Tạo email tạm thời, kiểm tra inbox nhanh và rút gọn link với Link4M. Giao diện tập trung vào tốc độ, dễ dùng trên điện thoại và không làm lộ API key trong mã nguồn frontend.</p>
-      </div>
-      <div class="hero-panel"><strong>Tình trạng hệ thống</strong><div class="stats"><div class="stat"><small>Temp Mail</small><b id="hero-mail-status">Đang kết nối…</b></div><div class="stat"><small>Link4M</small><b>API v2</b></div></div></div>
-    </section>
-
-    <section class="section-grid">
-      <article id="temp-mail" class="panel">
-        <div class="panel-head"><div class="panel-title"><div class="panel-icon">✉</div><div><h2>Email Tạm Thời</h2><p>TempMail.id.vn API v2 • tự tạo hộp thư khi mở trang</p></div></div><div id="temp-status" class="status-pill" data-tone="">Đang khởi tạo…</div></div>
-        <div class="panel-body">
-          <div class="email-display"><input id="temp-email" aria-label="Email tạm thời" readonly value="Đang tạo email…"><button id="copy-email" class="primary mini" type="button">Copy</button></div>
-          <div class="button-row"><button id="create-email" class="primary" type="button">+ Đổi Email mới</button><button id="refresh-mail" class="secondary" type="button">↻ Làm mới <span class="countdown" id="temp-countdown">7s</span></button><button id="delete-mailbox" class="danger" type="button">Xóa hộp thư</button></div>
-          <div class="form-grid">
-            <div class="field"><label for="temp-prefix">Prefix tự chọn</label><input id="temp-prefix" maxlength="48" placeholder="Để trống = ngẫu nhiên"></div>
-            <div class="field"><label for="temp-domain">Domain</label><select id="temp-domain"><option value="">Tự động chọn domain</option></select></div>
-            <div class="field full"><div class="field-hint">Nút “Random” chỉ thay prefix; domain thực tế được API TempMail cấp và kiểm soát.</div></div>
-          </div>
-          <div class="button-row"><button id="random-prefix" class="ghost mini" type="button">🎲 Tạo prefix ngẫu nhiên</button></div>
-          <div class="inbox-head"><h3>Hộp thư đến</h3><span id="message-count" class="count-badge">0</span></div>
-          <div id="message-list" class="message-list"></div>
-          <div id="message-empty" class="empty-state">Chưa có thư mới. Hệ thống sẽ tự kiểm tra theo chu kỳ.</div>
-        </div>
-      </article>
-
-      <article id="link4m" class="panel">
-        <div class="panel-head"><div class="panel-title"><div class="panel-icon">↗</div><div><h2>Rút Gọn Link</h2><p>Link4M API v2 • API Key được lưu trên thiết bị</p></div></div><div class="status-pill" data-tone="success">Ready</div></div>
-        <div class="panel-body">
-          <div class="field"><label for="link4m-api-key">Link4M API Key</label><div class="key-wrap"><input id="link4m-api-key" type="password" autocomplete="off" placeholder="Nhập API Key của bạn"><div class="key-tools"><button id="toggle-api-key" type="button">Hiện</button><button id="change-api-key" type="button">Đổi</button></div></div><div class="field-hint" id="key-saved-label">Chưa lưu</div></div>
-          <div class="form-grid">
-            <div class="field"><label for="link4m-title">Tiêu đề Link</label><input id="link4m-title" maxlength="120" placeholder="Ví dụ: TDM Dev chính thức"></div>
-            <div class="field"><label for="link4m-url">Link gốc</label><input id="link4m-url" type="url" inputmode="url" placeholder="https://example.com"></div>
-          </div>
-          <div class="button-row"><button id="shorten-button" class="primary" type="button">Rút gọn Link</button></div>
-          <div id="short-result" class="result" hidden>
-            <div class="result-grid"><div><div class="field-hint" style="margin-bottom:6px">Link rút gọn</div><input id="short-url" readonly><div class="button-row"><button id="copy-short" class="secondary mini" type="button">Copy Link</button></div></div><div class="qr-card"><div id="qrcode"></div></div></div>
-          </div>
-          <div class="history-head"><h3>Lịch sử trên thiết bị</h3><button id="clear-history" class="ghost mini" type="button">Xóa lịch sử</button></div>
-          <div id="link-history" class="history-list"></div>
-          <div id="link-history-empty" class="empty-state">Chưa có link rút gọn nào.</div>
-        </div>
-      </article>
-    </section>
-
-    <footer><div>© 2026 TDM Dev</div><div class="footer-links"><a href="https://tempmail.id.vn/en/p/api" target="_blank" rel="noopener">TempMail API</a><a href="https://link4m.co" target="_blank" rel="noopener">Link4M</a><a href="./admin.html">Admin</a></div></footer>
-  </main>
-
-  <div id="iframe-modal" class="modal" hidden>
-    <div class="modal-card">
-      <div class="modal-head"><h3 id="iframe-title">Xem nội dung</h3><button class="icon-button" type="button" data-close-modal="iframe-modal">×</button></div>
-      <div class="modal-content"><div class="iframe-wrap"><div id="iframe-loader" class="iframe-loader"><div><div class="tiny-spinner"></div><small>Đang tải trang…</small></div></div><iframe id="iframe-target" title="Nội dung menu" referrerpolicy="no-referrer"></iframe></div></div>
+    <div class="container-xl" style="padding-top:14px;">
+      <div id="system-banner" class="banner"></div>
     </div>
+
+    <section class="hero" id="home-hero">
+      <div class="container-xl hero-grid">
+        <div>
+          <span class="eyebrow">⚡ TDM DEV / TOOL ECOSYSTEM</span>
+          <h1>Xây nhanh.<br><span class="gradient-text">Làm tự do.</span><br>Không giới hạn.</h1>
+          <p>TDM Dev là một hệ sinh thái công cụ số được xây với tinh thần tối giản nhưng mạnh mẽ: những thao tác thường ngày của Dev & Creators được gom lại thành các trải nghiệm nhanh, rõ ràng và dễ dùng. Từ rút gọn link, email tạm thời đến workflow gửi email — mọi thứ được thiết kế để bạn tập trung vào việc tạo ra giá trị thay vì loay hoay với những bước lặp lại.</p>
+          <p>Không quảng cáo chen ngang. Không giao diện rối mắt. Chỉ có những công cụ cần thiết, một nền tảng backend ổn định và cảm giác sử dụng mượt mà trên cả máy tính lẫn điện thoại.</p>
+          <div class="hero-actions">
+            <button class="primary-button" id="hero-use-now" type="button">Sử dụng ngay! ↘</button>
+            <a class="secondary-button" href="/admin.html">Mở Admin ↗</a>
+          </div>
+        </div>
+        <div class="glass hero-art">
+          <div class="hero-orbit"></div>
+          <div class="hero-code">
+            <div>
+              <div class="window-dots"><span></span><span></span><span></span></div>
+              <div class="code-lines">
+                <div><b>const</b> <i>workflow</i> = <b>new</b> TDMDev();</div>
+                <div><i>workflow</i>.speed = <b>"fast"</b>;</div>
+                <div><i>workflow</i>.mode = <b>"clean"</b>;</div>
+                <div><i>workflow</i>.creator = <b>true</b>;</div>
+                <div><i>workflow</i>.ship();</div>
+              </div>
+            </div>
+            <div class="mini-stat">
+              <div class="stat-card"><strong>SPA</strong><span>Không reload</span></div>
+              <div class="stat-card"><strong>API</strong><span>Backend proxy</span></div>
+              <div class="stat-card"><strong>24/7</strong><span>Always ready</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about-tdmdev">
+      <div class="container-xl">
+        <div class="section-title"><div><span class="eyebrow">✦ CÂU CHUYỆN TDM DEV</span><h2>Một không gian số được tạo ra để bạn làm chủ nhịp sáng tạo.</h2><p>TDM Dev không chỉ là một tập hợp nút bấm. Đây là ý tưởng về một bộ công cụ gọn gàng, nơi công nghệ đứng phía sau để nhường chỗ cho mục tiêu của bạn.</p></div></div>
+        <div class="about-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px">
+          <article class="glass" style="padding:clamp(20px,3vw,32px);border-radius:24px"><h3 style="font-size:23px;font-weight:850;margin:0 0 14px">Từ những thao tác nhỏ đến một quy trình liền mạch</h3><p style="color:#cbd5e1;line-height:1.9;margin:0 0 14px">Trong công việc số, thời gian thường bị chia nhỏ bởi những thao tác lặp lại: tạo một địa chỉ email dùng thử, kiểm tra thư xác minh, rút gọn đường dẫn để chia sẻ hay chuẩn bị một thông điệp gửi đi. Mỗi thao tác riêng lẻ có thể không lớn, nhưng khi lặp đi lặp lại, chúng khiến mạch tập trung bị ngắt quãng.</p><p style="color:#cbd5e1;line-height:1.9;margin:0">TDM Dev được hình dung như một bàn làm việc trực tuyến: các công cụ thiết yếu được đặt cạnh nhau, cách dùng nhất quán, trạng thái hiển thị rõ ràng và thao tác chính luôn dễ tìm. Mục tiêu là giảm bớt bước thừa để bạn dành nhiều năng lượng hơn cho việc học, xây dựng và sáng tạo.</p></article>
+          <article class="glass" style="padding:clamp(20px,3vw,32px);border-radius:24px"><h3 style="font-size:23px;font-weight:850;margin:0 0 14px">Thiết kế lấy trải nghiệm làm trung tâm</h3><p style="color:#cbd5e1;line-height:1.9;margin:0 0 14px">Giao diện Dark Mode sử dụng tương phản vừa đủ, những lớp nền kính mờ, khoảng cách thoáng và chuyển động có chủ đích. Các thành phần được bố trí linh hoạt để sử dụng trên màn hình lớn lẫn điện thoại; nút bấm có trạng thái, biểu mẫu có phản hồi và nội dung được chia thành từng khu vực dễ theo dõi.</p><p style="color:#cbd5e1;line-height:1.9;margin:0">Animation không chỉ để trang web trông sống động. Hiệu ứng xuất hiện, chuyển cảnh và phản hồi tương tác được dùng để định hướng ánh nhìn, báo hiệu trạng thái và tạo cảm giác liền mạch — đồng thời ưu tiên khả năng đọc, tốc độ và sự thoải mái khi sử dụng lâu.</p></article>
+          <article class="glass" style="padding:clamp(20px,3vw,32px);border-radius:24px"><h3 style="font-size:23px;font-weight:850;margin:0 0 14px">Bộ công cụ dành cho Dev & Creators</h3><p style="color:#cbd5e1;line-height:1.9;margin:0 0 14px"><b style="color:#93c5fd">Link4M</b> hỗ trợ quy trình rút gọn đường dẫn thông qua API mà người dùng cung cấp. <b style="color:#c4b5fd">TempMail</b> tạo hộp thư tạm thời để phục vụ các nhu cầu kiểm thử và đăng ký thử nghiệm phù hợp. <b style="color:#67e8f9">SendMail</b> cung cấp giao diện soạn thư, chọn kiểu nội dung và đính kèm tệp với tiến trình dễ quan sát.</p><p style="color:#cbd5e1;line-height:1.9;margin:0">Mỗi công cụ có không gian riêng nhưng cùng tuân theo một nguyên tắc: đầu vào rõ ràng, kết quả dễ sao chép, thông báo dễ hiểu và lỗi được trình bày để người dùng biết bước tiếp theo. Hãy sử dụng các tính năng gửi thư có trách nhiệm, chỉ gửi tới người nhận đã đồng ý và tuân thủ quy định của nhà cung cấp.</p></article>
+          <article class="glass" style="padding:clamp(20px,3vw,32px);border-radius:24px"><h3 style="font-size:23px;font-weight:850;margin:0 0 14px">Minh bạch, an toàn và có thể mở rộng</h3><p style="color:#cbd5e1;line-height:1.9;margin:0 0 14px">TDM Dev tách giao diện frontend và dịch vụ backend thành hai repository độc lập. Frontend đảm nhiệm trải nghiệm người dùng; backend giữ các thông tin nhạy cảm, kết nối dịch vụ ngoài và kiểm tra quyền quản trị. Cách phân chia này giúp việc triển khai, bảo trì và mở rộng dễ kiểm soát hơn.</p><p style="color:#cbd5e1;line-height:1.9;margin:0">Các khóa API, mật khẩu ứng dụng và token quản trị cần được đặt trong biến môi trường phía máy chủ, không chia sẻ công khai. Tính năng quản trị có trang riêng, yêu cầu xác thực và cung cấp công cụ bật/tắt dịch vụ cùng thông báo hệ thống. TDM Dev tiếp tục được hoàn thiện theo hướng dễ hiểu, ổn định và tôn trọng quyền riêng tư.</p></article>
+        </div>
+        <div class="glass" style="margin-top:18px;padding:clamp(22px,4vw,38px);border-radius:24px;text-align:center"><h3 style="font-size:clamp(24px,4vw,34px);font-weight:900;margin:0 0 12px">Công cụ tốt là công cụ giúp bạn tiến xa hơn.</h3><p style="max-width:780px;margin:0 auto;color:#cbd5e1;line-height:1.9">Dù bạn là nhà phát triển đang thử nghiệm một ý tưởng, người sáng tạo nội dung đang chuẩn bị một chiến dịch hay người học đang khám phá thế giới công nghệ, TDM Dev mong muốn trở thành một điểm bắt đầu thân thiện: ít rào cản, rõ ràng trong từng thao tác và đủ linh hoạt để đồng hành cùng những dự án của bạn.</p></div>
+      </div>
+    </section>
+    <main>
+      <section class="section" id="tools-section">
+        <div class="container-xl">
+          <div class="section-title">
+            <div>
+              <h2>Công cụ của TDM Dev</h2>
+              <p>Chọn một workflow. TDM Dev sẽ chuyển nội dung ngay trong trang, đồng thời cập nhật clean URL bằng History API.</p>
+            </div>
+          </div>
+
+          <div class="tool-grid">
+            <button class="glass tool-card active" data-route="link4m" data-tool-card="link4m" type="button">
+              <div class="tool-icon">🔗</div>
+              <h3>Rút gọn Link4M</h3>
+              <p>Nhận link rút gọn và QR Code ngay sau khi backend xử lý API.</p>
+              <div class="tool-status"><span id="tool-status-link4m-text">Đang kiểm tra...</span><span id="tool-status-link4m-dot" class="status-dot"></span></div>
+            </button>
+            <button class="glass tool-card" data-route="tempmail" data-tool-card="tempmail" type="button">
+              <div class="tool-icon">✉</div>
+              <h3>Email tạm thời</h3>
+              <p>Tạo mailbox ngẫu nhiên, tự refresh 5 giây và soi OTP/link xác thực.</p>
+              <div class="tool-status"><span id="tool-status-tempmail-text">Đang kiểm tra...</span><span id="tool-status-tempmail-dot" class="status-dot"></span></div>
+            </button>
+            <button class="glass tool-card" data-route="sendmail" data-tool-card="sendmail" type="button">
+              <div class="tool-icon">➤</div>
+              <h3>Gửi email hàng loạt</h3>
+              <p>Textarea recipient, file đính kèm, HTML/plain text và tiến trình live.</p>
+              <div class="tool-status"><span id="tool-status-sendmail-text">Đang kiểm tra...</span><span id="tool-status-sendmail-dot" class="status-dot"></span></div>
+            </button>
+            <a class="glass tool-card" href="/admin.html">
+              <div class="tool-icon">⚙</div>
+              <h3>Admin Console ↗</h3>
+              <p>Không gian quản trị riêng biệt để điều khiển trạng thái công cụ và thông báo hệ thống.</p>
+              <div class="tool-status"><span>Token protected</span><span class="status-dot"></span></div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="workspace-section">
+        <div class="container-xl">
+          <div id="panel-home" class="panel active glass tool-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Bắt đầu workflow</h3>
+                <p>Chọn một công cụ ở phía trên. Bạn không cần mở tab mới — router client sẽ chuyển nội dung trong cùng một SPA.</p>
+              </div>
+            </div>
+            <div class="disabled-overlay">
+              <strong>TDM Dev sẵn sàng.</strong>
+              Rút gọn link, tạo email tạm hoặc chạy workflow gửi email từ menu công cụ.
+            </div>
+          </div>
+
+          <div id="panel-link4m" class="panel glass tool-panel">
+            <div class="panel-head"><div><h3>Rút gọn Link4M</h3><p>Lưu API Key cục bộ trên thiết bị và gửi request qua backend để không lộ logic API provider trong frontend.</p></div></div>
+            <form id="link4m-form" class="form-grid">
+              <div class="field">
+                <label for="link4m-api-key">Link4M API Key</label>
+                <input id="link4m-api-key" type="password" autocomplete="off" placeholder="Nhập API Key Link4M">
+              </div>
+              <div class="field">
+                <label for="link4m-target-url">Link đích</label>
+                <input id="link4m-target-url" type="url" placeholder="https://example.com" required>
+                <div class="hint">API Key chỉ được lưu trong localStorage của trình duyệt hiện tại.</div>
+              </div>
+              <div><button class="primary-button" id="link4m-submit" type="submit">Rút gọn ngay</button></div>
+            </form>
+            <div id="link4m-status" class="status-box" hidden></div>
+            <div id="link4m-result" class="result-card" hidden>
+              <div class="field">
+                <label for="link4m-short-url">Link rút gọn</label>
+                <div class="inline-grid"><input id="link4m-short-url" type="text" readonly><button class="secondary-button" id="link4m-copy" type="button">Sao chép</button></div>
+              </div>
+              <div class="qr-box" id="link4m-qr" aria-label="QR Code link rút gọn"></div>
+            </div>
+          </div>
+
+          <div id="panel-tempmail" class="panel glass tool-panel">
+            <div class="panel-head"><div><h3>Email tạm thời</h3><p>Mailbox được giữ trong sessionStorage. Backend gọi API 1SecMail và trình duyệt tự kiểm tra hộp thư mỗi 5 giây.</p></div></div>
+            <div class="mail-toolbar">
+              <div class="field"><label for="tempmail-email">Email hiện tại</label><input id="tempmail-email" type="text" readonly placeholder="Đang tạo..."></div>
+              <button class="secondary-button" id="tempmail-copy" type="button">Copy Email</button>
+              <button class="secondary-button" id="tempmail-create" type="button">Tạo Email Khác</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;">
+              <div id="tempmail-countdown" class="hint">Sẵn sàng.</div>
+              <button class="secondary-button" id="tempmail-refresh" type="button">↻ Làm mới</button>
+            </div>
+            <div id="tempmail-status" class="status-box" hidden></div>
+            <div id="tempmail-highlight" class="signal-box" hidden></div>
+            <div id="tempmail-messages" class="mailbox"></div>
+          </div>
+
+          <div id="panel-sendmail" class="panel glass tool-panel">
+            <div class="panel-head"><div><h3>Gửi Email Hàng Loạt</h3><p>Danh sách email được chuẩn hóa, loại trùng và gửi tuần tự. Sau mỗi lượt, giao diện đếm ngược 15 giây trước khi chuyển tiếp.</p></div></div>
+            <form id="sendmail-form" class="form-grid">
+              <div class="field">
+                <label for="sendmail-recipients">Danh sách email nhận</label>
+                <textarea id="sendmail-recipients" placeholder="abc@gmail.com\ndef@example.com\n..."></textarea>
+                <div class="hint">Có thể ngăn cách bằng xuống dòng, dấu phẩy hoặc dấu chấm phẩy. Địa chỉ trùng sẽ tự loại.</div>
+              </div>
+              <div class="field"><label for="sendmail-subject">Tiêu đề Email</label><input id="sendmail-subject" type="text" placeholder="Tiêu đề email"></div>
+              <div class="field">
+                <label>Kiểu nội dung</label>
+                <div class="radio-row">
+                  <label class="radio-pill"><input id="sendmail-plain" name="sendmail-content-type" type="radio" value="plain" checked><span>Văn bản thuần</span></label>
+                  <label class="radio-pill"><input id="sendmail-html" name="sendmail-content-type" type="radio" value="html"><span>Mã HTML</span></label>
+                </div>
+              </div>
+              <div class="field"><label for="sendmail-body">Nội dung Email</label><textarea id="sendmail-body" placeholder="Nội dung email văn bản..."></textarea></div>
+              <div class="field"><label for="sendmail-attachment">Đính kèm</label><input id="sendmail-attachment" type="file"><div class="hint">Tối đa 10 MB mỗi file ở frontend/backend.</div></div>
+              <div class="field" style="max-width:260px;"><label for="sendmail-repeat">Số lần gửi lặp lại / email</label><input id="sendmail-repeat" type="number" min="1" max="3" value="1"></div>
+              <div><button class="primary-button" id="sendmail-submit" type="submit">Bắt đầu gửi</button></div>
+            </form>
+            <div id="sendmail-status" class="status-box" hidden></div>
+            <div id="sendmail-progress-wrap" class="progress-wrap" hidden><div class="progress-track"><div id="sendmail-progress" class="progress-bar"></div></div><div id="sendmail-progress-label" class="progress-label">Sẵn sàng.</div></div>
+            <div id="sendmail-logs" class="live-log"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><div class="container-xl">© 2026 TDM Dev · Built for Devs & Creators.</div></footer>
   </div>
 
-  <div id="message-modal" class="modal" hidden>
-    <div class="modal-card" style="width:min(920px,100%)"><div class="modal-head"><h3 id="message-modal-title">Email</h3><button class="icon-button" type="button" data-close-modal="message-modal">×</button></div><div id="message-modal-body" class="modal-content message-modal-content"></div></div>
-  </div>
 
-  <div id="confirm-modal" class="modal" hidden><div class="confirm-card panel"><h3 id="confirm-title">Xác nhận</h3><p id="confirm-message"></p><div class="confirm-actions"><button id="confirm-cancel" class="secondary" type="button">Hủy</button><button id="confirm-ok" class="danger" type="button">Xác nhận</button></div></div></div>
-  <div id="toast-host" class="toast-host" aria-live="polite"></div>
+  <script type="module">
+    import { BACKEND_URL, apiFetch, escapeHtml } from './js/config.js';
+    import { mountLink4m } from './js/link4m.js';
+    import { mountTempmail } from './js/tempmail.js';
+    import { mountSendmail } from './js/sendmail.js';
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-  <script type="module" src="./js/main.js"></script>
+    const routes = {
+      home: '/',
+      link4m: '/link4m',
+      tempmail: '/tempmail',
+      sendmail: '/sendmail',
+    };
+    let publicConfig = { banner: '', tools: { link4m: true, tempmail: true, sendmail: true } };
+
+    const routeFromPath = () => {
+      const path = window.location.pathname.replace(/\/+$/, '') || '/';
+      const entry = Object.entries(routes).find(([, route]) => route === path);
+      return entry ? entry[0] : 'home';
+    };
+
+    const applyToolAvailability = () => {
+      Object.entries(publicConfig.tools || {}).forEach(([key, enabled]) => {
+        const text = document.querySelector(`#tool-status-${key}-text`);
+        const dot = document.querySelector(`#tool-status-${key}-dot`);
+        if (text) text.textContent = enabled === false ? 'Đang tắt' : 'Đang hoạt động';
+        if (dot) dot.classList.toggle('off', enabled === false);
+      });
+    };
+
+    const renderBanner = () => {
+      const banner = document.querySelector('#system-banner');
+      const text = String(publicConfig.banner || '').trim();
+      banner.textContent = text;
+      banner.classList.toggle('visible', Boolean(text));
+    };
+
+    const isEnabled = (route) => route === 'home' || route === 'admin' || publicConfig.tools?.[route] !== false;
+
+    const showRoute = async (route, push = true) => {
+      if (!isEnabled(route)) route = 'home';
+      if (push && window.location.pathname !== routes[route]) history.pushState({ route }, '', routes[route]);
+
+
+      document.querySelectorAll('[data-route]').forEach((element) => {
+        element.classList.toggle('active', element.dataset.route === route);
+      });
+      document.querySelectorAll('.tool-card[data-tool-card]').forEach((element) => {
+        element.classList.toggle('active', element.dataset.toolCard === route);
+      });
+      document.querySelectorAll('.panel').forEach((panel) => panel.classList.remove('active'));
+      const target = document.querySelector(`#panel-${route}`) || document.querySelector('#panel-home');
+      target?.classList.add('active');
+
+      document.querySelector('#home-hero').style.display = route === 'home' ? '' : 'none';
+      if (route === 'tempmail') await mountTempmail();
+      document.querySelector('#tools-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const hydrateConfig = async () => {
+      try {
+        const data = await apiFetch('/api/config/public');
+        publicConfig = {
+          banner: data?.banner || '',
+          tools: { link4m: true, tempmail: true, sendmail: true, ...(data?.tools || {}) },
+        };
+      } catch (error) {
+        console.warn('Public config unavailable:', error.message);
+      }
+      applyToolAvailability();
+      renderBanner();
+    };
+
+    document.addEventListener('click', (event) => {
+      const routeButton = event.target.closest('[data-route]');
+      if (!routeButton) return;
+      event.preventDefault();
+      showRoute(routeButton.dataset.route);
+      document.querySelector('#mobile-drawer')?.classList.remove('open');
+    });
+
+    window.addEventListener('popstate', () => showRoute(routeFromPath(), false));
+    window.addEventListener('tdmdev:config-updated', (event) => {
+      publicConfig = event.detail;
+      applyToolAvailability();
+      renderBanner();
+    });
+
+    document.querySelector('#hero-use-now').addEventListener('click', () => {
+      document.querySelector('#tools-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.querySelector('#menu-toggle').addEventListener('click', () => {
+      document.querySelector('#mobile-drawer').classList.toggle('open');
+    });
+
+    mountLink4m();
+    mountSendmail();
+
+    const boot = async () => {
+      await hydrateConfig();
+      const initialRoute = routeFromPath();
+      await showRoute(initialRoute, false);
+      window.setTimeout(() => document.querySelector('#preloader')?.classList.add('hidden'), 500);
+    };
+
+    boot();
+    console.info(`TDM Dev booted · BACKEND_URL=${BACKEND_URL}`);
+  </script>
 </body>
 </html>
