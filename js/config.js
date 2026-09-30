@@ -1,4 +1,4 @@
-export const BACKEND_URL = 'https://YOUR-RAILWAY-DOMAIN.up.railway.app';
+export const BACKEND_URL = 'https://tdmdevback-production-17d4.up.railway.app/';
 
 export async function apiFetch(path, options = {}) {
   const url = `${BACKEND_URL}${path}`;
