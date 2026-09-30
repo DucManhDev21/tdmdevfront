@@ -1,139 +1,31 @@
-import { apiFetch } from './config.js';
+import { apiFetch, copyText, showToast } from './config.js';
 
-const STORAGE_KEY = 'link4m_api_key';
-let initialized = false;
-
-function getElements() {
-  return {
-    form: document.querySelector('#link4m-form'),
-    apiKey: document.querySelector('#link4m-api-key'),
-    targetUrl: document.querySelector('#link4m-target-url'),
-    submit: document.querySelector('#link4m-submit'),
-    result: document.querySelector('#link4m-result'),
-    shortUrl: document.querySelector('#link4m-short-url'),
-    copy: document.querySelector('#link4m-copy'),
-    qr: document.querySelector('#link4m-qr'),
-    status: document.querySelector('#link4m-status'),
-  };
-}
-
-function setStatus(message = '', type = 'info') {
-  const { status } = getElements();
-  if (!status) return;
-  status.textContent = message;
-  status.dataset.type = type;
-  status.hidden = !message;
-}
-
-async function copyText(text, button) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    textarea.remove();
-  }
-
-  if (button) {
-    const original = button.innerHTML;
-    button.innerHTML = '✓ Đã sao chép';
-    button.classList.add('copied');
-    window.setTimeout(() => {
-      button.innerHTML = original;
-      button.classList.remove('copied');
-    }, 2000);
-  }
-}
-
-async function createQrCode(url, canvas) {
-  if (!canvas || !window.QRCode) return;
-  canvas.innerHTML = '';
-  const qrTarget = document.createElement('div');
-  qrTarget.style.maxWidth = '100%';
-  canvas.appendChild(qrTarget);
-  await new Promise((resolve, reject) => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const form = document.querySelector('#link4m-form');
+  const apiKey = document.querySelector('#link4m-api');
+  const url = document.querySelector('#link4m-url');
+  const result = document.querySelector('#link4m-result');
+  const shortInput = document.querySelector('#link4m-short');
+  const qr = document.querySelector('#link4m-qr');
+  const submit = document.querySelector('#link4m-submit');
+  const status = document.querySelector('#link4m-status');
+  apiKey.value = localStorage.getItem('link4m_api_key') || '';
+  const setStatus = (text, type='info') => { status.textContent = text; status.className = `status show ${type}`; };
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const key = apiKey.value.trim(); const destination = url.value.trim();
+    if (!key || !destination) return setStatus('Vui lòng nhập API Key và URL đích.', 'error');
+    submit.disabled = true; submit.textContent = 'Đang rút gọn...'; setStatus('Đang gửi yêu cầu tới Link4M...', 'info');
     try {
-      const qr = new QRCode(qrTarget, {
-        text: url,
-        width: 220,
-        height: 220,
-        colorDark: '#0f172a',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M,
-      });
-      if (qr) resolve(); else resolve();
-    } catch (error) {
-      reject(error);
-    }
-  }).catch(() => {
-    canvas.textContent = 'Không tạo được QR Code.';
+      localStorage.setItem('link4m_api_key', key);
+      const data = await apiFetch('/api/link4m/shorten', { method:'POST', body: JSON.stringify({ apiKey:key, url:destination }) });
+      shortInput.value = data.shortUrl;
+      result.hidden = false;
+      qr.innerHTML = '';
+      if (window.QRCode) new QRCode(qr, { text:data.shortUrl, width:150, height:150, correctLevel:QRCode.CorrectLevel.M });
+      setStatus('Rút gọn thành công.', 'success');
+    } catch (error) { setStatus(error.message || 'Không thể rút gọn link.', 'error'); }
+    finally { submit.disabled = false; submit.textContent = 'Rút gọn Link'; }
   });
-}
-
-async function handleSubmit(event) {
-  event.preventDefault();
-  const elements = getElements();
-  const apiKey = elements.apiKey.value.trim();
-  const url = elements.targetUrl.value.trim();
-
-  if (!apiKey) {
-    setStatus('Vui lòng nhập API Key Link4M.', 'error');
-    elements.apiKey.focus();
-    return;
-  }
-
-  try {
-    new URL(url);
-  } catch {
-    setStatus('Link đích không hợp lệ. Hãy nhập URL đầy đủ, ví dụ https://example.com.', 'error');
-    elements.targetUrl.focus();
-    return;
-  }
-
-  localStorage.setItem(STORAGE_KEY, apiKey);
-  elements.submit.disabled = true;
-  elements.submit.innerHTML = '<span class="button-spinner"></span> Đang rút gọn...';
-  elements.result.hidden = true;
-  setStatus('Đang gọi Link4M API thông qua backend...', 'info');
-
-  try {
-    const data = await apiFetch('/api/link4m/shorten', {
-      method: 'POST',
-      body: JSON.stringify({ apiKey, url }),
-    });
-
-    const shortUrl = data?.shortUrl;
-    if (!shortUrl) {
-      throw new Error('Backend không trả về link rút gọn.');
-    }
-
-    elements.shortUrl.value = shortUrl;
-    elements.result.hidden = false;
-    await createQrCode(shortUrl, elements.qr);
-    setStatus('Rút gọn thành công.', 'success');
-  } catch (error) {
-    setStatus(error.message || 'Không thể rút gọn link.', 'error');
-  } finally {
-    elements.submit.disabled = false;
-    elements.submit.textContent = 'Rút gọn ngay';
-  }
-}
-
-export function mountLink4m() {
-  const elements = getElements();
-  if (!elements.form || initialized) return;
-  initialized = true;
-
-  elements.apiKey.value = localStorage.getItem(STORAGE_KEY) || '';
-  elements.form.addEventListener('submit', handleSubmit);
-  elements.copy.addEventListener('click', () => copyText(elements.shortUrl.value, elements.copy));
-}
-
-export function unmountLink4m() {
-  // The page is SPA-based; the controls are kept in DOM and hidden by the router.
-}
+  document.querySelector('#link4m-copy')?.addEventListener('click', async () => { if (!shortInput.value) return; await copyText(shortInput.value); const b = document.querySelector('#link4m-copy'); const old=b.textContent; b.textContent='✓ Đã sao chép'; setTimeout(()=>b.textContent=old,2000); showToast('Đã sao chép link rút gọn.'); });
+});
