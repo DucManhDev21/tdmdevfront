@@ -72,7 +72,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
     <div class="grid tool-grid">
       <a class="tool-card" href="#link4m"><div class="tool-icon" data-big-icon="link"></div><h3>Link4M</h3><p>Rút gọn URL bằng API key Link4M của bạn, kết quả trả về có nút sao chép nhanh.</p></a>
       <a class="tool-card" href="#tempmail"><div class="tool-icon" data-big-icon="mail"></div><h3>TempMail</h3><p>Tạo địa chỉ email Mail.tm nguyên bản và theo dõi hộp thư ngay trên trang.</p></a>
-      <a class="tool-card" href="#sendmail"><div class="tool-icon" data-big-icon="send"></div><h3>SendMail</h3><p>Soạn và gửi email qua Gmail SMTP đã cấu hình trên Railway, hỗ trợ tệp đính kèm.</p></a>
+      <a class="tool-card" href="#sendmail"><div class="tool-icon" data-big-icon="send"></div><h3>SendMail</h3><p>Soạn và gửi email qua backend (Brevo/Resend API), hỗ trợ tệp đính kèm.</p></a>
     </div>
     <div class="section-head"><div><div class="eyebrow">SYSTEM</div><h2>Trạng thái</h2></div><span class="status" id="backendStatus"><i class="dot"></i>Đang kiểm tra backend…</span></div>
     <div class="panel"><div class="result-row"><div><strong>Backend</strong><div class="hint" id="backendText">Đang kết nối tới API…</div></div><button class="btn" id="pingBtn">Kiểm tra lại</button></div></div>
@@ -103,7 +103,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   </section>
 
   <section class="view" id="view-sendmail">
-    <div class="section-head"><div><div class="eyebrow">TOOL / 03</div><h2>SendMail</h2><p>Gửi bằng Gmail SMTP trên backend</p></div></div>
+    <div class="section-head"><div><div class="eyebrow">TOOL / 03</div><h2>SendMail</h2><p>Gửi qua Brevo/Resend API trên backend</p></div></div>
     <div class="panel">
       <form id="sendForm">
         <div class="form-grid">
@@ -116,7 +116,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
         <div class="actions"><button class="btn primary" id="sendBtn" type="submit">Gửi email</button><button class="btn" type="reset">Làm lại</button></div>
       </form>
       <div class="result" id="sendResult"><div id="sendResultText"></div></div>
-      <div class="hint">Không yêu cầu nhập Gmail/App Password ở giao diện: backend dùng <code>GMAIL_USER</code> và <code>GMAIL_APP_PASS</code> đã cấu hình trên Railway.</div>
+      <div class="hint">Gửi qua backend bằng HTTPS API (Brevo/Resend), cấu hình <code>BREVO_API_KEY</code> và <code>MAIL_FROM</code> trên Railway. Không cần nhập mật khẩu ở giao diện.</div>
     </div>
   </section>
 
@@ -146,7 +146,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 <script>
 (() => {
   'use strict';
-  const BACKEND_URL = 'https://tdmdevback-production-760d.up.railway.app';
+  const BACKEND_URL = String(window.TDM_BACKEND_URL || 'https://tdmdevback-production-760d.up.railway.app').replace(/\/+$/, '');
   const logoSvg = `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="110" height="110" rx="28" fill="white"/><path d="M28 36h64v12H69v39H51V48H28z" fill="black"/><path d="M73 72l12-13 12 13-12 13z" fill="#111"/></svg>`;
   const icon = (name) => {
     const paths = {
@@ -169,6 +169,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const state = {
     tempEmail: localStorage.getItem('tdm_mailbox') || '',
+    mailToken: localStorage.getItem('tdm_mailbox_token') || '',
     adminToken: sessionStorage.getItem('tdm_admin_token') || '',
     mailboxTimer: null,
     currentRoute: ''
@@ -178,8 +179,13 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   const fmt = (v) => { if(!v) return 'Chưa rõ thời gian'; const d = new Date(v); return Number.isNaN(d.getTime()) ? String(v) : new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'medium'}).format(d); };
   async function apiFetch(path, options={}) {
     const headers = new Headers(options.headers || {}); headers.set('Accept','application/json');
-    const response = await fetch(BACKEND_URL + path, {...options, headers});
-    const raw = await response.text(); let data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch { data = {message: raw}; }
+    const { timeout = 30000, ...fetchOptions } = options;
+    const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), timeout);
+    let response, raw;
+    try { response = await fetch(BACKEND_URL + path, {...fetchOptions, headers, signal: ctrl.signal}); raw = await response.text(); }
+    catch(err){ const e = new Error(err.name === 'AbortError' ? 'Backend không phản hồi (quá thời gian chờ).' : 'Không kết nối được backend. Kiểm tra BACKEND_URL và CORS_ORIGINS.'); e.status = 0; throw e; }
+    finally { clearTimeout(timer); }
+    let data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch { data = {message: raw}; }
     if(!response.ok || data.success === false){ const e = new Error(data.message || `HTTP ${response.status}`); e.payload = data; e.status = response.status; throw e; }
     return data;
   }
@@ -240,20 +246,20 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   }
   async function createMailbox(){
     const b=$('#createMailBtn'); b.disabled=true; b.innerHTML='<span class="loading"></span>Đang tạo…';
-    try{ const data=await apiFetch('/api/tempmail/create',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); state.tempEmail=data.email; localStorage.setItem('tdm_mailbox',state.tempEmail); renderMailbox(); $('#inbox').innerHTML='<div class="empty">Mailbox mới đã tạo. Đang kiểm tra email…</div>'; await refreshMailbox(false); startMailboxPolling(); toast('Đã tạo email Mail.tm.'); }
+    try{ const data=await apiFetch('/api/tempmail/create',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); state.tempEmail=data.email; state.mailToken=data.token||''; localStorage.setItem('tdm_mailbox',state.tempEmail); localStorage.setItem('tdm_mailbox_token',state.mailToken); renderMailbox(); $('#inbox').innerHTML='<div class="empty">Mailbox mới đã tạo. Đang kiểm tra email…</div>'; await refreshMailbox(false); startMailboxPolling(); toast('Đã tạo email Mail.tm.'); }
     catch(e){ toast(e.message || 'Không tạo được mailbox.'); }
     finally{b.disabled=false;b.textContent='Tạo email';}
   }
   async function refreshMailbox(showToast=true){
     if(!state.tempEmail) return;
     try{
-      const data=await apiFetch('/api/tempmail/messages?email='+encodeURIComponent(state.tempEmail));
+      const data=await apiFetch('/api/tempmail/messages?email='+encodeURIComponent(state.tempEmail),{headers:state.mailToken?{'X-Mailbox-Token':state.mailToken}:{}});
       const messages=Array.isArray(data.messages)?data.messages:[];
       if(!messages.length){$('#inbox').innerHTML='<div class="empty">Chưa có thư mới. Hệ thống sẽ tự refresh.</div>';}
       else $('#inbox').innerHTML=messages.map(m=>`<details class="mail"><summary><div class="mail-meta"><div class="mail-subject">${escapeHtml(m.subject || '(Không có tiêu đề)')}</div><div class="mail-from">${escapeHtml(m.from_name || '')}${m.from_email?' • '+escapeHtml(m.from_email):''}</div></div><div class="mail-time">${escapeHtml(fmt(m.receivedAt))}</div></summary><div class="mail-body"><div class="hint">Đến: ${escapeHtml(m.to || state.tempEmail)}</div><pre>${escapeHtml(m.textBody || m.content || m.intro || '(Không có nội dung text)')}</pre></div></details>`).join('');
       $('#mailChecked').textContent='Kiểm tra lúc '+fmt(data.checkedAt || new Date().toISOString()) + ' • '+messages.length+' thư hiển thị';
       if(showToast) toast('Đã refresh hộp thư.');
-    }catch(e){ $('#mailStatus').innerHTML='<i class="dot"></i>Lỗi phiên'; if(showToast) toast(e.message || 'Không lấy được hộp thư.'); }
+    }catch(e){ $('#mailStatus').innerHTML='<i class="dot"></i>Lỗi phiên'; $('#mailChecked').textContent='Lỗi: '+(e.message||'Không lấy được hộp thư.'); if(e.status===404){ stopMailboxPolling(); state.tempEmail=''; state.mailToken=''; localStorage.removeItem('tdm_mailbox'); localStorage.removeItem('tdm_mailbox_token'); renderMailbox(); $('#inbox').innerHTML='<div class="empty">Phiên hộp thư đã hết hạn. Bấm “Tạo email” để tạo mới.</div>'; } if(showToast) toast(e.message || 'Không lấy được hộp thư.'); }
   }
   function startMailboxPolling(){stopMailboxPolling(); if(!state.tempEmail) return; state.mailboxTimer=setInterval(()=>{ if(state.currentRoute==='tempmail') refreshMailbox(false); },5000);}
   function stopMailboxPolling(){ if(state.mailboxTimer){clearInterval(state.mailboxTimer);state.mailboxTimer=null;} }
@@ -264,7 +270,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   $('#sendForm').addEventListener('submit',async e=>{
     e.preventDefault(); const btn=$('#sendBtn'); const fd=new FormData(); fd.append('toEmail',$('#toEmail').value.trim()); fd.append('subject',$('#subject').value.trim()); fd.append('body',$('#body').value); fd.append('isHtml',$('#isHtml').checked?'true':'false'); if($('#attachment').files[0]) fd.append('attachment',$('#attachment').files[0]);
     btn.disabled=true; btn.innerHTML='<span class="loading"></span>Đang gửi…'; $('#sendResult').classList.remove('show');
-    try{ const data=await apiFetch('/api/sendmail',{method:'POST',body:fd}); $('#sendResultText').innerHTML='<span class="ok"><strong>Gửi thành công.</strong></span><div class="hint">Message ID: '+escapeHtml(data.messageId || '—')+'</div>'; $('#sendResult').classList.add('show'); toast('Email đã được chấp nhận để gửi.'); }
+    try{ const data=await apiFetch('/api/sendmail',{method:'POST',body:fd,timeout:90000}); $('#sendResultText').innerHTML='<span class="ok"><strong>Gửi thành công.</strong></span><div class="hint">Message ID: '+escapeHtml(data.messageId || '—')+'</div>'; $('#sendResult').classList.add('show'); toast('Email đã được chấp nhận để gửi.'); }
     catch(e){ $('#sendResultText').innerHTML='<span class="error"><strong>'+escapeHtml(e.message || 'Gửi email thất bại.')+'</strong></span>'; $('#sendResult').classList.add('show'); toast(e.message || 'Gửi email thất bại.'); }
     finally{btn.disabled=false;btn.textContent='Gửi email';}
   });
